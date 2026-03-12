@@ -481,3 +481,4 @@ function MetricCell({ value, prev }: { value: number; prev?: number }) {
     </td>
   );
 }
+
