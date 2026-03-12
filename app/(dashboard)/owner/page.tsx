@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import {
   DollarSign,
   TrendingUp,
@@ -43,60 +42,45 @@ export default function OwnerDashboard() {
   const [recentTransactions, setRecentTransactions] = useState<FinanceTransaction[]>([]);
 
   async function loadData() {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    try {
+      const res = await fetch("/api/owner-dashboard");
+      if (!res.ok) return;
+      const data = await res.json();
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("display_name")
-      .eq("id", user.id)
-      .maybeSingle();
-    setDisplayName(profile?.display_name || "Owner");
+      setDisplayName(data.display_name);
 
-    // Fetch all finance transactions
-    const { data: transactions } = await supabase
-      .from("finance_transactions")
-      .select("*")
-      .order("date", { ascending: false });
+      const txns = data.transactions || [];
 
-    const txns = transactions || [];
+      let income = 0;
+      let expenses = 0;
+      txns.forEach((t: FinanceTransaction) => {
+        if (t.type === "income") income += Number(t.amount);
+        if (t.type === "expense") expenses += Number(t.amount);
+      });
+      setTotalIncome(income);
+      setTotalExpenses(expenses);
+      setRecentTransactions(txns.slice(0, 8));
 
-    let income = 0;
-    let expenses = 0;
-    txns.forEach((t) => {
-      if (t.type === "income") income += Number(t.amount);
-      if (t.type === "expense") expenses += Number(t.amount);
-    });
-    setTotalIncome(income);
-    setTotalExpenses(expenses);
-    setRecentTransactions(txns.slice(0, 8));
+      const allClients = data.clients || [];
+      setActiveClients(allClients.filter((c: ClientWithFinance) => c.status === "active").length);
 
-    // Fetch all clients
-    const { data: clients } = await supabase
-      .from("clients")
-      .select("id, company_name, deal_value_monthly, status")
-      .order("company_name");
+      const monthlyRecurring = allClients
+        .filter((c: ClientWithFinance) => c.status === "active")
+        .reduce((sum: number, c: ClientWithFinance) => sum + Number(c.deal_value_monthly || 0), 0);
+      setMrr(monthlyRecurring);
 
-    const allClients = clients || [];
-    setActiveClients(allClients.filter((c) => c.status === "active").length);
-
-    const monthlyRecurring = allClients
-      .filter((c) => c.status === "active")
-      .reduce((sum, c) => sum + Number(c.deal_value_monthly || 0), 0);
-    setMrr(monthlyRecurring);
-
-    const breakdown: ClientWithFinance[] = allClients.map((c) => {
-      const clientTxns = txns.filter((t) => t.client_id === c.id);
-      const cIncome = clientTxns
-        .filter((t) => t.type === "income")
-        .reduce((s, t) => s + Number(t.amount), 0);
-      const cExpenses = clientTxns
-        .filter((t) => t.type === "expense")
-        .reduce((s, t) => s + Number(t.amount), 0);
-      return { ...c, totalIncome: cIncome, totalExpenses: cExpenses };
-    });
-    setClientBreakdown(breakdown);
+      const breakdown: ClientWithFinance[] = allClients.map((c: ClientWithFinance) => {
+        const clientTxns = txns.filter((t: FinanceTransaction) => t.client_id === c.id);
+        const cIncome = clientTxns
+          .filter((t: FinanceTransaction) => t.type === "income")
+          .reduce((s: number, t: FinanceTransaction) => s + Number(t.amount), 0);
+        const cExpenses = clientTxns
+          .filter((t: FinanceTransaction) => t.type === "expense")
+          .reduce((s: number, t: FinanceTransaction) => s + Number(t.amount), 0);
+        return { ...c, totalIncome: cIncome, totalExpenses: cExpenses };
+      });
+      setClientBreakdown(breakdown);
+    } catch {}
     setLoading(false);
     setRefreshing(false);
   }

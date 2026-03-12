@@ -35,7 +35,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = createServerSupabaseClient();
+  const supabase = getServiceClient();
 
   const { data: profiles, error } = await supabase
     .from("profiles")
