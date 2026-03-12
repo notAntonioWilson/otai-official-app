@@ -29,6 +29,20 @@ export default function DashboardShell({
   const [moreOpen, setMoreOpen] = useState(false);
   const pathname = usePathname();
 
+  // Last-route persistence (not for clients)
+  useEffect(() => {
+    if (role !== "client" && pathname) {
+      try {
+        const supabase = createClient();
+        supabase.auth.getUser().then(({ data: { user } }) => {
+          if (user) {
+            localStorage.setItem(`otai_last_route_${user.id}`, pathname);
+          }
+        });
+      } catch {}
+    }
+  }, [pathname, role]);
+
   useEffect(() => {
     async function check() {
       const supabase = createClient();

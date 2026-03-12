@@ -73,11 +73,13 @@ export default function LoginPage() {
         return;
       }
 
-      // Redirect based on role
+      // Redirect based on role (restore last route for non-clients)
       const role = profile.role;
-      if (role === "owner") window.location.href = "/owner";
-      else if (role === "marketing") window.location.href = "/marketing";
-      else if (role === "sales_rep") window.location.href = "/sales";
+      const lastRoute = role !== "client" ? localStorage.getItem(`otai_last_route_${userId}`) : null;
+
+      if (role === "owner") window.location.href = lastRoute?.startsWith("/owner") ? lastRoute : "/owner";
+      else if (role === "marketing") window.location.href = lastRoute?.startsWith("/marketing") ? lastRoute : "/marketing";
+      else if (role === "sales_rep") window.location.href = lastRoute?.startsWith("/sales") ? lastRoute : "/sales";
       else if (role === "client") window.location.href = "/client";
       else window.location.href = "/client";
     } catch {

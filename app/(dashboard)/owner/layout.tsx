@@ -3,7 +3,7 @@
 import DashboardShell from "@/components/ui/DashboardShell";
 import {
   LayoutDashboard, Monitor, Eye, Contact, DollarSign, Megaphone,
-  BarChart3, BookOpen, UserCog, Webhook,
+  BarChart3, BookOpen, UserCog, Webhook, Bell,
 } from "lucide-react";
 
 export default function OwnerLayout({ children }: { children: React.ReactNode }) {
@@ -16,6 +16,7 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
     { name: "Marketing", href: "/owner/marketing-oversight", icon: Megaphone },
     { name: "Sales", href: "/owner/sales-oversight", icon: BarChart3 },
     { name: "Courses", href: "/owner/courses", icon: BookOpen },
+    { name: "Client Updates", href: "/owner/client-updates", icon: Bell },
     { name: "Users", href: "/owner/users", icon: UserCog },
     { name: "Webhooks", href: "/owner/webhooks", icon: Webhook },
   ];
@@ -35,6 +36,7 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
         { name: "Marketing Oversight", href: "/owner/marketing-oversight", icon: Megaphone },
         { name: "Sales Oversight", href: "/owner/sales-oversight", icon: BarChart3 },
         { name: "Courses", href: "/owner/courses", icon: BookOpen },
+        { name: "Client Updates", href: "/owner/client-updates", icon: Bell },
         { name: "Users", href: "/owner/users", icon: UserCog },
         { name: "Webhooks", href: "/owner/webhooks", icon: Webhook },
       ]}
