@@ -12,12 +12,13 @@ export async function updateSession(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setAll(cookiesToSet: any[]) {
+          cookiesToSet.forEach(({ name, value }: { name: string; value: string }) =>
             request.cookies.set(name, value)
           );
           supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value, options }: { name: string; value: string; options: any }) =>
             supabaseResponse.cookies.set(name, value, options)
           );
         },
@@ -33,15 +34,11 @@ export async function updateSession(request: NextRequest) {
   const isLoginPage = path === "/login" || path === "/";
   const isApiRoute = path.startsWith("/api");
 
-  // Not authenticated and not on login/api page → redirect to login
   if (!user && !isLoginPage && !isApiRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
-
-  // Authenticated and on login page → let login page handle redirect
-  // (login page will check role and redirect)
 
   return supabaseResponse;
 }
