@@ -18,20 +18,34 @@ export default function LoginPage() {
       const supabase = createClient();
       let email = identifier.trim();
 
-      // If input doesn't contain @, treat as username and look up email
+      // If input doesn't contain @, treat as username and look up email via secure API
       if (!email.includes("@")) {
-        const { data: profile, error: lookupError } = await supabase
-          .from("profiles")
-          .select("email")
-          .eq("username", email)
-          .maybeSingle();
+        try {
+          const lookupRes = await fetch("/api/lookup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: email }),
+          });
 
-        if (lookupError || !profile) {
-          setError("User not found.");
+          if (lookupRes.status === 429) {
+            setError("Too many attempts. Please wait a minute.");
+            setLoading(false);
+            return;
+          }
+
+          if (!lookupRes.ok) {
+            setError("Invalid credentials.");
+            setLoading(false);
+            return;
+          }
+
+          const lookupData = await lookupRes.json();
+          email = lookupData.email;
+        } catch {
+          setError("Unable to verify username.");
           setLoading(false);
           return;
         }
-        email = profile.email;
       }
 
       // Sign in with email and password
