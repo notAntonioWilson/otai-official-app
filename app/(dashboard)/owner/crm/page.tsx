@@ -30,6 +30,15 @@ interface ActivityEntry {
   created_at: string;
 }
 
+interface CrmFile {
+  id: string;
+  lead_id: string;
+  file_name: string;
+  file_url: string;
+  file_type: string;
+  created_at: string;
+}
+
 const LEAD_STATUSES = [
   "Hot NOT Contacted",
   "Contact 1 (fail)",
@@ -64,6 +73,8 @@ export default function OwnerCRM() {
   // Detail view
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [activities, setActivities] = useState<ActivityEntry[]>([]);
+  const [files, setFiles] = useState<CrmFile[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [newNote, setNewNote] = useState("");
   const [addingNote, setAddingNote] = useState(false);
 
@@ -107,6 +118,36 @@ export default function OwnerCRM() {
       .eq("lead_id", leadId)
       .order("created_at", { ascending: false });
     setActivities(data || []);
+
+    const { data: f } = await supabase
+      .from("crm_files")
+      .select("*")
+      .eq("lead_id", leadId)
+      .order("created_at", { ascending: false });
+    setFiles(f || []);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.length || !selectedLead) return;
+    const file = e.target.files[0];
+    setUploading(true);
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("lead_id", selectedLead.id);
+
+    try {
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setSuccess("File uploaded.");
+      setTimeout(() => setSuccess(""), 3000);
+      loadActivities(selectedLead.id);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Upload failed");
+    }
+    setUploading(false);
+    e.target.value = "";
   };
 
   const openLead = (lead: Lead) => {
@@ -382,6 +423,42 @@ export default function OwnerCRM() {
                         <FileText size={10} /> File
                       </a>
                     )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Files */}
+        <div className="bg-otai-dark border border-otai-border rounded-xl mt-6">
+          <div className="flex items-center justify-between p-5 border-b border-otai-border">
+            <h2 className="text-white font-semibold flex items-center gap-2">
+              <FileText size={16} className="text-otai-gold" />
+              Files
+            </h2>
+            <label className={`flex items-center gap-2 px-3 py-1.5 bg-otai-purple/10 text-otai-purple rounded-lg text-xs cursor-pointer hover:bg-otai-purple/20 transition-colors ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
+              {uploading ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
+              {uploading ? "Uploading..." : "Upload File"}
+              <input type="file" className="hidden" onChange={handleFileUpload} accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.png,.jpg,.jpeg" />
+            </label>
+          </div>
+          {files.length === 0 ? (
+            <div className="p-6 text-center text-otai-text-muted text-sm">No files. Upload PDFs, contracts, or documents.</div>
+          ) : (
+            <div className="divide-y divide-otai-border">
+              {files.map((f) => (
+                <div key={f.id} className="flex items-center justify-between p-4">
+                  <div className="flex items-center gap-3">
+                    <FileText size={16} className="text-otai-text-muted" />
+                    <div>
+                      <a href={f.file_url} target="_blank" rel="noopener noreferrer" className="text-white text-sm hover:text-otai-purple transition-colors">
+                        {f.file_name}
+                      </a>
+                      <p className="text-otai-text-muted text-xs">
+                        {f.file_type.toUpperCase()} · {new Date(f.created_at).toLocaleDateString("en-US", { timeZone: "America/New_York", month: "short", day: "numeric" })}
+                      </p>
+                    </div>
                   </div>
                 </div>
               ))}

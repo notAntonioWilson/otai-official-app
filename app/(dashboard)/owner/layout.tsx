@@ -3,7 +3,7 @@
 import DashboardShell from "@/components/ui/DashboardShell";
 import {
   LayoutDashboard, Monitor, Eye, Contact, DollarSign, Megaphone,
-  BarChart3, BookOpen, UserCog, Webhook, Bell,
+  BarChart3, BookOpen, UserCog, Webhook, Bell, Shield,
 } from "lucide-react";
 
 export default function OwnerLayout({ children }: { children: React.ReactNode }) {
@@ -18,6 +18,7 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
     { name: "Courses", href: "/owner/courses", icon: BookOpen },
     { name: "Client Updates", href: "/owner/client-updates", icon: Bell },
     { name: "Users", href: "/owner/users", icon: UserCog },
+    { name: "Roles", href: "/owner/roles", icon: Shield },
     { name: "Webhooks", href: "/owner/webhooks", icon: Webhook },
   ];
 
@@ -38,6 +39,7 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
         { name: "Courses", href: "/owner/courses", icon: BookOpen },
         { name: "Client Updates", href: "/owner/client-updates", icon: Bell },
         { name: "Users", href: "/owner/users", icon: UserCog },
+        { name: "Roles", href: "/owner/roles", icon: Shield },
         { name: "Webhooks", href: "/owner/webhooks", icon: Webhook },
       ]}
       settingsHref="/owner/settings"

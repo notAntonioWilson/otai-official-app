@@ -4,8 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   Megaphone, ChevronLeft, ChevronRight, ChevronDown, Plus, X,
-  Pencil, Trash2, Loader2, Check, AlertCircle, Users, Folder,
-  FileText,
+  Pencil, Trash2, Loader2, Check, AlertCircle, Users, UserPlus,
+  UserMinus,
 } from "lucide-react";
 
 interface CalendarPost {
@@ -21,7 +21,7 @@ interface CalendarPost {
 
 interface ClientOption { id: string; company_name: string; }
 interface ProfileOption { id: string; display_name: string | null; email: string; }
-interface Assignment { marketer_id: string; client_id: string; }
+interface Assignment { id: string; marketer_id: string; client_id: string; }
 
 const PLATFORMS: Record<string, { label: string; color: string }> = {
   instagram: { label: "IG", color: "bg-pink-500/20 text-pink-400 border-pink-500/30" },
@@ -53,11 +53,10 @@ export default function OwnerMarketingOversight() {
   const [marketers, setMarketers] = useState<ProfileOption[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [weekRef, setWeekRef] = useState(estNow());
-
-  // Filter
   const [filterClient, setFilterClient] = useState("all");
+  const [activeTab, setActiveTab] = useState<"calendar" | "assignments">("calendar");
 
-  // Modal
+  // Calendar modal
   const [showModal, setShowModal] = useState(false);
   const [editingPost, setEditingPost] = useState<CalendarPost | null>(null);
   const [form, setForm] = useState({ client_id: "", platform: "instagram", post_type: "Post", scheduled_date: "", description: "" });
@@ -65,9 +64,13 @@ export default function OwnerMarketingOversight() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // Assignment modal
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [assignMarketer, setAssignMarketer] = useState("");
+  const [assignClient, setAssignClient] = useState("");
+
   const loadData = useCallback(async () => {
     const supabase = createClient();
-
     const { data: c } = await supabase.from("clients").select("id, company_name").order("company_name");
     setClients(c || []);
     const map: Record<string, string> = {};
@@ -80,7 +83,7 @@ export default function OwnerMarketingOversight() {
     const { data: m } = await supabase.from("profiles").select("id, display_name, email").eq("role", "marketing");
     setMarketers(m || []);
 
-    const { data: a } = await supabase.from("marketing_client_assignments").select("marketer_id, client_id");
+    const { data: a } = await supabase.from("marketing_client_assignments").select("id, marketer_id, client_id");
     setAssignments(a || []);
 
     setLoading(false);
@@ -90,9 +93,9 @@ export default function OwnerMarketingOversight() {
 
   const weekDays = getWeekDays(weekRef);
   const todayStr = toDateStr(estNow());
-
   const filteredPosts = filterClient === "all" ? posts : posts.filter((p) => p.client_id === filterClient);
 
+  // Calendar handlers
   const openAdd = (dateStr?: string) => {
     setEditingPost(null);
     setForm({ client_id: clients[0]?.id || "", platform: "instagram", post_type: "Post", scheduled_date: dateStr || toDateStr(estNow()), description: "" });
@@ -126,15 +129,39 @@ export default function OwnerMarketingOversight() {
     }
     setSaving(false); setShowModal(false);
     setSuccess(editingPost ? "Post updated." : "Post added.");
-    setTimeout(() => setSuccess(""), 3000);
-    loadData();
+    setTimeout(() => setSuccess(""), 3000); loadData();
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDeletePost = async (id: string) => {
     const supabase = createClient();
     await supabase.from("marketing_calendar").delete().eq("id", id);
     setSuccess("Post deleted."); setTimeout(() => setSuccess(""), 3000); loadData();
   };
+
+  // Assignment handlers
+  const handleAddAssignment = async () => {
+    if (!assignMarketer || !assignClient) { setError("Select both marketer and client."); return; }
+    const exists = assignments.some((a) => a.marketer_id === assignMarketer && a.client_id === assignClient);
+    if (exists) { setError("This assignment already exists."); return; }
+
+    setSaving(true); setError("");
+    const supabase = createClient();
+    const { error: err } = await supabase.from("marketing_client_assignments").insert({
+      marketer_id: assignMarketer, client_id: assignClient,
+    });
+    if (err) { setError(err.message); setSaving(false); return; }
+    setSaving(false); setShowAssignModal(false);
+    setSuccess("Assignment added."); setTimeout(() => setSuccess(""), 3000); loadData();
+  };
+
+  const handleRemoveAssignment = async (id: string) => {
+    const supabase = createClient();
+    await supabase.from("marketing_client_assignments").delete().eq("id", id);
+    setSuccess("Assignment removed."); setTimeout(() => setSuccess(""), 3000); loadData();
+  };
+
+  const marketerNameMap: Record<string, string> = {};
+  marketers.forEach((m) => { marketerNameMap[m.id] = m.display_name || m.email; });
 
   if (loading) return <div className="text-otai-text-secondary">Loading marketing oversight...</div>;
 
@@ -144,93 +171,143 @@ export default function OwnerMarketingOversight() {
         <h1 className="text-2xl font-bold text-white flex items-center gap-2">
           <Megaphone size={24} className="text-otai-purple" /> Marketing Oversight
         </h1>
-        <button onClick={() => openAdd()} className="flex items-center gap-2 px-4 py-2.5 bg-otai-purple hover:bg-otai-purple-hover text-white rounded-lg text-sm font-medium transition-colors">
-          <Plus size={16} /> Add Post
-        </button>
+        <div className="flex items-center gap-2">
+          {activeTab === "calendar" && (
+            <button onClick={() => openAdd()} className="flex items-center gap-2 px-4 py-2.5 bg-otai-purple hover:bg-otai-purple-hover text-white rounded-lg text-sm font-medium transition-colors">
+              <Plus size={16} /> Add Post
+            </button>
+          )}
+          {activeTab === "assignments" && (
+            <button onClick={() => { setShowAssignModal(true); setAssignMarketer(marketers[0]?.id || ""); setAssignClient(clients[0]?.id || ""); setError(""); }}
+              className="flex items-center gap-2 px-4 py-2.5 bg-otai-purple hover:bg-otai-purple-hover text-white rounded-lg text-sm font-medium transition-colors">
+              <UserPlus size={16} /> Assign
+            </button>
+          )}
+        </div>
       </div>
 
       {success && (
         <div className="mb-4 p-3 bg-otai-green/10 border border-otai-green/30 rounded-lg flex items-center gap-2 text-otai-green text-sm"><Check size={16} /> {success}</div>
       )}
 
-      {/* Assignments Overview */}
-      <div className="bg-otai-dark border border-otai-border rounded-xl p-5 mb-6">
-        <h2 className="text-white font-semibold flex items-center gap-2 mb-3"><Users size={16} className="text-otai-purple" /> Marketer Assignments</h2>
-        {marketers.length === 0 ? (
-          <p className="text-otai-text-muted text-sm">No marketers yet.</p>
-        ) : (
-          <div className="space-y-2">
-            {marketers.map((m) => {
-              const assigned = assignments.filter((a) => a.marketer_id === m.id).map((a) => clientMap[a.client_id] || "Unknown");
+      {/* Tabs */}
+      <div className="flex items-center gap-2 mb-6">
+        <button onClick={() => setActiveTab("calendar")}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === "calendar" ? "bg-otai-purple text-white" : "bg-otai-dark border border-otai-border text-otai-text-secondary hover:text-white"}`}>
+          Calendar
+        </button>
+        <button onClick={() => setActiveTab("assignments")}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === "assignments" ? "bg-otai-purple text-white" : "bg-otai-dark border border-otai-border text-otai-text-secondary hover:text-white"}`}>
+          Assignments
+        </button>
+      </div>
+
+      {/* ============ ASSIGNMENTS TAB ============ */}
+      {activeTab === "assignments" && (
+        <div>
+          {marketers.length === 0 ? (
+            <div className="bg-otai-dark border border-otai-border rounded-xl p-12 text-center">
+              <Users size={48} className="text-otai-text-muted mx-auto mb-4" />
+              <p className="text-otai-text-secondary">No marketers yet. Add a marketing user first.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {marketers.map((m) => {
+                const mAssignments = assignments.filter((a) => a.marketer_id === m.id);
+                return (
+                  <div key={m.id} className="bg-otai-dark border border-otai-border rounded-xl p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h3 className="text-white font-medium">{m.display_name || m.email}</h3>
+                        <p className="text-otai-text-muted text-xs">{m.email}</p>
+                      </div>
+                      <span className="text-otai-text-muted text-xs">{mAssignments.length} client{mAssignments.length !== 1 ? "s" : ""}</span>
+                    </div>
+                    {mAssignments.length === 0 ? (
+                      <p className="text-otai-text-muted text-sm">No clients assigned.</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {mAssignments.map((a) => (
+                          <div key={a.id} className="flex items-center gap-1.5 px-3 py-1.5 bg-otai-purple/10 border border-otai-purple/20 rounded-lg">
+                            <span className="text-otai-text-secondary text-xs">{clientMap[a.client_id] || "Unknown"}</span>
+                            <button onClick={() => handleRemoveAssignment(a.id)}
+                              className="text-otai-text-muted hover:text-otai-red transition-colors">
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ============ CALENDAR TAB ============ */}
+      {activeTab === "calendar" && (
+        <div>
+          {/* Client filter + week nav */}
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+            <div className="flex items-center gap-2">
+              <button onClick={() => { const d = new Date(weekRef); d.setDate(d.getDate() - 7); setWeekRef(d); }}
+                className="p-2 rounded-lg bg-otai-dark border border-otai-border text-otai-text-secondary hover:text-white"><ChevronLeft size={16} /></button>
+              <button onClick={() => { const d = new Date(weekRef); d.setDate(d.getDate() + 7); setWeekRef(d); }}
+                className="p-2 rounded-lg bg-otai-dark border border-otai-border text-otai-text-secondary hover:text-white"><ChevronRight size={16} /></button>
+              <button onClick={() => setWeekRef(estNow())} className="px-3 py-2 rounded-lg bg-otai-dark border border-otai-border text-otai-text-secondary hover:text-white text-xs">This Week</button>
+              <span className="text-otai-text-secondary text-sm ml-2">
+                {weekDays[0].toLocaleDateString("en-US", { month: "short", day: "numeric" })} — {weekDays[6].toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+              </span>
+            </div>
+            <div className="relative">
+              <select value={filterClient} onChange={(e) => setFilterClient(e.target.value)}
+                className="bg-otai-dark border border-otai-border rounded-lg px-3 py-2 text-xs text-otai-text-secondary appearance-none pr-7 focus:outline-none focus:border-otai-purple">
+                <option value="all">All Clients</option>
+                {clients.map((c) => <option key={c.id} value={c.id}>{c.company_name}</option>)}
+              </select>
+              <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-otai-text-muted pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Week Grid */}
+          <div className="grid grid-cols-7 gap-2">
+            {weekDays.map((day) => {
+              const dateStr = toDateStr(day);
+              const isToday = dateStr === todayStr;
+              const dayPosts = filteredPosts.filter((p) => p.scheduled_date === dateStr);
               return (
-                <div key={m.id} className="flex items-center justify-between text-sm">
-                  <span className="text-white">{m.display_name || m.email}</span>
-                  <span className="text-otai-text-muted text-xs">{assigned.length > 0 ? assigned.join(", ") : "No clients assigned"}</span>
+                <div key={dateStr} className={`bg-otai-dark border rounded-xl min-h-[130px] flex flex-col ${isToday ? "border-otai-purple/50" : "border-otai-border"}`}>
+                  <div className="flex items-center justify-between px-2.5 py-2 border-b border-otai-border">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] text-otai-text-muted uppercase">{day.toLocaleDateString("en-US", { weekday: "short" })}</span>
+                      <span className={`text-xs font-medium ${isToday ? "text-otai-purple" : "text-white"}`}>{day.getDate()}</span>
+                    </div>
+                    <button onClick={() => openAdd(dateStr)} className="p-0.5 rounded text-otai-text-muted hover:text-otai-purple"><Plus size={12} /></button>
+                  </div>
+                  <div className="flex-1 p-1.5 space-y-1 overflow-y-auto">
+                    {dayPosts.map((post) => {
+                      const plat = PLATFORMS[post.platform] || PLATFORMS.x;
+                      const firstName = (clientMap[post.client_id] || "—").split(" ")[0];
+                      return (
+                        <div key={post.id} className={`group relative px-2 py-1.5 rounded-lg border text-[10px] cursor-pointer ${plat.color}`} onClick={() => openEdit(post)}>
+                          <div className="flex items-center gap-1"><span className="font-bold">{plat.label}</span><span className="truncate">{firstName}</span></div>
+                          <div className="text-[9px] opacity-70 capitalize">{post.post_type}</div>
+                          <button onClick={(e) => { e.stopPropagation(); handleDeletePost(post.id); }}
+                            className="absolute top-1 right-1 hidden group-hover:block p-0.5 rounded bg-black/50"><Trash2 size={10} /></button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })}
           </div>
-        )}
-      </div>
-
-      {/* Client filter + week nav */}
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-        <div className="flex items-center gap-2">
-          <button onClick={() => { const d = new Date(weekRef); d.setDate(d.getDate() - 7); setWeekRef(d); }}
-            className="p-2 rounded-lg bg-otai-dark border border-otai-border text-otai-text-secondary hover:text-white"><ChevronLeft size={16} /></button>
-          <button onClick={() => { const d = new Date(weekRef); d.setDate(d.getDate() + 7); setWeekRef(d); }}
-            className="p-2 rounded-lg bg-otai-dark border border-otai-border text-otai-text-secondary hover:text-white"><ChevronRight size={16} /></button>
-          <button onClick={() => setWeekRef(estNow())} className="px-3 py-2 rounded-lg bg-otai-dark border border-otai-border text-otai-text-secondary hover:text-white text-xs">This Week</button>
-          <span className="text-otai-text-secondary text-sm ml-2">
-            {weekDays[0].toLocaleDateString("en-US", { month: "short", day: "numeric" })} — {weekDays[6].toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-          </span>
         </div>
-        <div className="relative">
-          <select value={filterClient} onChange={(e) => setFilterClient(e.target.value)}
-            className="bg-otai-dark border border-otai-border rounded-lg px-3 py-2 text-xs text-otai-text-secondary appearance-none pr-7 focus:outline-none focus:border-otai-purple">
-            <option value="all">All Clients</option>
-            {clients.map((c) => <option key={c.id} value={c.id}>{c.company_name}</option>)}
-          </select>
-          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-otai-text-muted pointer-events-none" />
-        </div>
-      </div>
+      )}
 
-      {/* Week Grid */}
-      <div className="grid grid-cols-7 gap-2 mb-8">
-        {weekDays.map((day) => {
-          const dateStr = toDateStr(day);
-          const isToday = dateStr === todayStr;
-          const dayPosts = filteredPosts.filter((p) => p.scheduled_date === dateStr);
-
-          return (
-            <div key={dateStr} className={`bg-otai-dark border rounded-xl min-h-[130px] flex flex-col ${isToday ? "border-otai-purple/50" : "border-otai-border"}`}>
-              <div className="flex items-center justify-between px-2.5 py-2 border-b border-otai-border">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-otai-text-muted uppercase">{day.toLocaleDateString("en-US", { weekday: "short" })}</span>
-                  <span className={`text-xs font-medium ${isToday ? "text-otai-purple" : "text-white"}`}>{day.getDate()}</span>
-                </div>
-                <button onClick={() => openAdd(dateStr)} className="p-0.5 rounded text-otai-text-muted hover:text-otai-purple"><Plus size={12} /></button>
-              </div>
-              <div className="flex-1 p-1.5 space-y-1 overflow-y-auto">
-                {dayPosts.map((post) => {
-                  const plat = PLATFORMS[post.platform] || PLATFORMS.x;
-                  const firstName = (clientMap[post.client_id] || "—").split(" ")[0];
-                  return (
-                    <div key={post.id} className={`group relative px-2 py-1.5 rounded-lg border text-[10px] cursor-pointer ${plat.color}`} onClick={() => openEdit(post)}>
-                      <div className="flex items-center gap-1"><span className="font-bold">{plat.label}</span><span className="truncate">{firstName}</span></div>
-                      <div className="text-[9px] opacity-70 capitalize">{post.post_type}</div>
-                      <button onClick={(e) => { e.stopPropagation(); handleDelete(post.id); }}
-                        className="absolute top-1 right-1 hidden group-hover:block p-0.5 rounded bg-black/50"><Trash2 size={10} /></button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Add/Edit Modal */}
+      {/* ============ CALENDAR ADD/EDIT MODAL ============ */}
       {showModal && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80" onClick={() => setShowModal(false)} />
@@ -287,6 +364,49 @@ export default function OwnerMarketingOversight() {
               <button onClick={handleSave} disabled={saving}
                 className="flex items-center gap-2 px-5 py-2.5 bg-otai-purple hover:bg-otai-purple-hover text-white rounded-lg text-sm font-medium disabled:opacity-50">
                 {saving && <Loader2 size={14} className="animate-spin" />}{editingPost ? "Update" : "Add Post"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============ ASSIGNMENT MODAL ============ */}
+      {showAssignModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80" onClick={() => setShowAssignModal(false)} />
+          <div className="relative bg-otai-dark border border-otai-border rounded-2xl w-full max-w-sm p-6 z-10">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-bold text-white">Assign Marketer to Client</h2>
+              <button onClick={() => setShowAssignModal(false)} className="text-otai-text-muted hover:text-white"><X size={20} /></button>
+            </div>
+            {error && <div className="mb-4 p-3 bg-otai-red/10 border border-otai-red/30 rounded-lg flex items-center gap-2 text-otai-red text-sm"><AlertCircle size={16} /> {error}</div>}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs text-otai-text-muted uppercase tracking-wide mb-1.5">Marketer</label>
+                <div className="relative">
+                  <select value={assignMarketer} onChange={(e) => setAssignMarketer(e.target.value)}
+                    className="w-full bg-black border border-otai-border rounded-lg px-3 py-2.5 text-white text-sm appearance-none focus:outline-none focus:border-otai-purple">
+                    {marketers.map((m) => <option key={m.id} value={m.id}>{m.display_name || m.email}</option>)}
+                  </select>
+                  <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-otai-text-muted pointer-events-none" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-otai-text-muted uppercase tracking-wide mb-1.5">Client</label>
+                <div className="relative">
+                  <select value={assignClient} onChange={(e) => setAssignClient(e.target.value)}
+                    className="w-full bg-black border border-otai-border rounded-lg px-3 py-2.5 text-white text-sm appearance-none focus:outline-none focus:border-otai-purple">
+                    {clients.map((c) => <option key={c.id} value={c.id}>{c.company_name}</option>)}
+                  </select>
+                  <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-otai-text-muted pointer-events-none" />
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-otai-border">
+              <button onClick={() => setShowAssignModal(false)} className="px-4 py-2 text-sm text-otai-text-secondary hover:text-white">Cancel</button>
+              <button onClick={handleAddAssignment} disabled={saving}
+                className="flex items-center gap-2 px-5 py-2.5 bg-otai-purple hover:bg-otai-purple-hover text-white rounded-lg text-sm font-medium disabled:opacity-50">
+                {saving && <Loader2 size={14} className="animate-spin" />} Assign
               </button>
             </div>
           </div>
