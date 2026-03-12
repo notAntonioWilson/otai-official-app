@@ -11,6 +11,7 @@ import {
 interface ClientItem {
   id: string;
   company_name: string;
+  display_name: string;
 }
 
 interface MetricRow {
@@ -92,11 +93,24 @@ export default function MarketingClients() {
 
     let clientsList: ClientItem[] = [];
     if (clientIds.length > 0) {
-      const { data } = await supabase.from("clients").select("id, company_name").in("id", clientIds);
-      clientsList = data || [];
+      const { data } = await supabase
+        .from("clients")
+        .select("id, company_name, profiles!clients_user_id_fkey(display_name)")
+        .in("id", clientIds);
+      clientsList = (data || []).map((c: Record<string, unknown>) => ({
+        id: c.id as string,
+        company_name: c.company_name as string,
+        display_name: ((c.profiles as Record<string, unknown>)?.display_name as string) || c.company_name as string,
+      }));
     } else {
-      const { data } = await supabase.from("clients").select("id, company_name");
-      clientsList = data || [];
+      const { data } = await supabase
+        .from("clients")
+        .select("id, company_name, profiles!clients_user_id_fkey(display_name)");
+      clientsList = (data || []).map((c: Record<string, unknown>) => ({
+        id: c.id as string,
+        company_name: c.company_name as string,
+        display_name: ((c.profiles as Record<string, unknown>)?.display_name as string) || c.company_name as string,
+      }));
     }
     setClients(clientsList);
     setLoading(false);
@@ -228,7 +242,7 @@ export default function MarketingClients() {
           <ArrowLeft size={16} /> All Clients
         </button>
 
-        <h1 className="text-2xl font-bold text-white mb-6">{selectedClient.company_name}</h1>
+        <h1 className="text-2xl font-bold text-white mb-6">{selectedClient.display_name}</h1>
 
         {/* Messages */}
         {error && (
@@ -455,7 +469,12 @@ export default function MarketingClients() {
               onClick={() => loadClientData(c)}
               className="w-full bg-otai-dark border border-otai-border rounded-xl p-5 hover:border-otai-purple/40 transition-colors text-left flex items-center justify-between"
             >
-              <span className="text-white font-medium">{c.company_name}</span>
+              <div className="flex flex-col">
+                <span className="text-white font-medium">{c.display_name}</span>
+                {c.company_name !== c.display_name && (
+                  <span className="text-sm text-gray-400">{c.company_name}</span>
+                )}
+              </div>
               <ChevronRight size={16} className="text-otai-text-muted" />
             </button>
           ))}
