@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { getServiceClient } from "@/lib/supabase/service";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 
 export async function GET() {
   try {
-    const supabase = getServiceClient();
+    const supabase = createServiceRoleClient();
 
     const [clientsRes, postsRes, marketersRes, assignmentsRes] = await Promise.all([
       supabase.from("clients").select("id, company_name, user_id, profiles!clients_user_id_fkey(display_name)").order("company_name"),
@@ -25,7 +25,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const supabase = getServiceClient();
+    const supabase = createServiceRoleClient();
     const body = await req.json();
     const { action, ...payload } = body;
 
