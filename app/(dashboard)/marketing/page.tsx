@@ -21,6 +21,7 @@ interface CalendarPost {
 interface ClientOption {
   id: string;
   company_name: string;
+  display_name: string;
 }
 
 const PLATFORMS = [
@@ -105,20 +106,28 @@ export default function MarketingCalendar() {
     if (clientIds.length > 0) {
       const { data } = await supabase
         .from("clients")
-        .select("id, company_name")
+        .select("id, company_name, profiles!clients_user_id_fkey(display_name)")
         .in("id", clientIds);
-      clientsList = data || [];
+      clientsList = (data || []).map((c: Record<string, unknown>) => ({
+        id: c.id as string,
+        company_name: c.company_name as string,
+        display_name: ((c.profiles as Record<string, unknown>)?.display_name as string) || c.company_name as string,
+      }));
     } else {
       const { data } = await supabase
         .from("clients")
-        .select("id, company_name");
-      clientsList = data || [];
+        .select("id, company_name, profiles!clients_user_id_fkey(display_name)");
+      clientsList = (data || []).map((c: Record<string, unknown>) => ({
+        id: c.id as string,
+        company_name: c.company_name as string,
+        display_name: ((c.profiles as Record<string, unknown>)?.display_name as string) || c.company_name as string,
+      }));
       clientIds = clientsList.map((c) => c.id);
     }
     setClients(clientsList);
 
     const map: Record<string, string> = {};
-    clientsList.forEach((c) => { map[c.id] = c.company_name; });
+    clientsList.forEach((c) => { map[c.id] = c.display_name; });
     setClientMap(map);
 
     // Get posts for visible range (fetch broader to avoid re-fetching on nav)
@@ -369,7 +378,7 @@ export default function MarketingCalendar() {
                     className="w-full bg-black border border-otai-border rounded-lg px-3 py-2.5 text-white text-sm appearance-none focus:outline-none focus:border-otai-purple"
                   >
                     {clients.map((c) => (
-                      <option key={c.id} value={c.id}>{c.company_name}</option>
+                      <option key={c.id} value={c.id}>{c.display_name}{c.display_name !== c.company_name ? ` (${c.company_name})` : ""}</option>
                     ))}
                   </select>
                   <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-otai-text-muted pointer-events-none" />
