@@ -60,7 +60,18 @@ export async function GET() {
     clients = data || [];
   }
 
-  return NextResponse.json({ profiles, clients });
+  // Fetch ALL client records (for assignment dropdowns)
+  const { data: allClients } = await supabase
+    .from("clients")
+    .select("id, company_name, user_id, profiles!clients_user_id_fkey(display_name)")
+    .order("company_name");
+
+  // Fetch marketing assignments
+  const { data: assignments } = await supabase
+    .from("marketing_client_assignments")
+    .select("id, marketer_id, client_id");
+
+  return NextResponse.json({ profiles, clients, allClients: allClients || [], assignments: assignments || [] });
 }
 
 // POST — create a new user
@@ -284,6 +295,38 @@ export async function PATCH(req: NextRequest) {
       await serviceClient.auth.admin.updateUserById(userId, {
         email: fields.email,
       });
+    }
+
+    return NextResponse.json({ success: true });
+  }
+
+  if (action === "assign_clients") {
+    // fields.client_ids = array of client IDs to assign to this marketer
+    const clientIds: string[] = fields.client_ids || [];
+
+    // Get current assignments
+    const { data: current } = await serviceClient
+      .from("marketing_client_assignments")
+      .select("id, client_id")
+      .eq("marketer_id", userId);
+
+    const currentIds = (current || []).map((a) => a.client_id);
+
+    // Add new ones
+    const toAdd = clientIds.filter((id: string) => !currentIds.includes(id));
+    if (toAdd.length > 0) {
+      await serviceClient.from("marketing_client_assignments").insert(
+        toAdd.map((client_id: string) => ({ marketer_id: userId, client_id }))
+      );
+    }
+
+    // Remove ones no longer selected
+    const toRemove = (current || []).filter((a) => !clientIds.includes(a.client_id));
+    if (toRemove.length > 0) {
+      await serviceClient
+        .from("marketing_client_assignments")
+        .delete()
+        .in("id", toRemove.map((a) => a.id));
     }
 
     return NextResponse.json({ success: true });

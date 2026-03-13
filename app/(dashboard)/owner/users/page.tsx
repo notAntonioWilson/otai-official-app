@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   UserCog, Plus, X, Shield, Eye, EyeOff, ChevronDown,
-  Pencil, UserX, UserCheck, Trash2, AlertCircle, Check, Loader2,
+  Pencil, UserX, UserCheck, Trash2, AlertCircle, Check, Loader2, Users,
 } from "lucide-react";
 
 type UserRole = "owner" | "marketing" | "sales_rep" | "client";
@@ -29,6 +29,19 @@ interface ClientRow {
   deal_value_monthly: number;
   status: string;
   client_services: { id: string; service_type: string; status: string }[];
+}
+
+interface AllClientRow {
+  id: string;
+  company_name: string;
+  user_id: string;
+  profiles?: { display_name: string | null } | null;
+}
+
+interface AssignmentRow {
+  id: string;
+  marketer_id: string;
+  client_id: string;
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -59,6 +72,8 @@ const SERVICE_OPTIONS = [
 export default function OwnerUsers() {
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [clients, setClients] = useState<ClientRow[]>([]);
+  const [allClients, setAllClients] = useState<AllClientRow[]>([]);
+  const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -68,8 +83,10 @@ export default function OwnerUsers() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<ProfileRow | null>(null);
   const [saving, setSaving] = useState(false);
+  const [assignedClientIds, setAssignedClientIds] = useState<string[]>([]);
 
   // Add user form
   const [newUser, setNewUser] = useState({
@@ -114,6 +131,8 @@ export default function OwnerUsers() {
       const data = await res.json();
       setProfiles(data.profiles || []);
       setClients(data.clients || []);
+      setAllClients(data.allClients || []);
+      setAssignments(data.assignments || []);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load users");
     } finally {
@@ -313,6 +332,62 @@ export default function OwnerUsers() {
     }));
   };
 
+  // --- CLIENT ASSIGNMENTS ---
+  const openAssignModal = (user: ProfileRow) => {
+    setSelectedUser(user);
+    const currentAssigned = assignments
+      .filter((a) => a.marketer_id === user.id)
+      .map((a) => a.client_id);
+    setAssignedClientIds(currentAssigned);
+    setShowAssignModal(true);
+    clearMessages();
+  };
+
+  const toggleAssignClient = (clientId: string) => {
+    setAssignedClientIds((prev) =>
+      prev.includes(clientId)
+        ? prev.filter((id) => id !== clientId)
+        : [...prev, clientId]
+    );
+  };
+
+  const handleSaveAssignments = async () => {
+    if (!selectedUser) return;
+    clearMessages();
+    setSaving(true);
+    try {
+      const res = await fetch("/api/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: selectedUser.id,
+          action: "assign_clients",
+          client_ids: assignedClientIds,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      flashSuccess("Client assignments updated.");
+      setShowAssignModal(false);
+      loadUsers();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to update assignments");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const getAssignmentsForUser = (userId: string) =>
+    assignments.filter((a) => a.marketer_id === userId);
+
+  const getClientLabel = (clientId: string) => {
+    const c = allClients.find((cl) => cl.id === clientId);
+    if (!c) return "Unknown";
+    const personName = c.profiles?.display_name;
+    if (personName && personName !== c.company_name) return `${personName} (${c.company_name})`;
+    return c.company_name;
+  };
+
   // --- HELPERS ---
   const getClientForUser = (userId: string) =>
     clients.find((c) => c.user_id === userId);
@@ -420,6 +495,22 @@ export default function OwnerUsers() {
                       ))}
                     </div>
                   )}
+                  {user.role === "marketing" && (
+                    <div className="mt-2">
+                      {getAssignmentsForUser(user.id).length > 0 ? (
+                        <div className="flex gap-1.5 flex-wrap">
+                          <span className="text-[10px] text-otai-text-muted uppercase tracking-wide self-center mr-1">Clients:</span>
+                          {getAssignmentsForUser(user.id).map((a) => (
+                            <span key={a.id} className="px-2 py-0.5 bg-blue-500/5 border border-blue-500/20 rounded text-xs text-blue-400">
+                              {getClientLabel(a.client_id)}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-otai-text-muted italic">No clients assigned</span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Actions */}
@@ -431,6 +522,15 @@ export default function OwnerUsers() {
                   >
                     <Pencil size={14} />
                   </button>
+                  {user.role === "marketing" && (
+                    <button
+                      onClick={() => openAssignModal(user)}
+                      className="p-2 rounded-lg text-otai-text-muted hover:text-blue-400 hover:bg-blue-400/5 transition-colors"
+                      title="Assign Clients"
+                    >
+                      <Users size={14} />
+                    </button>
+                  )}
                   <button
                     onClick={() => openRoleModal(user)}
                     className="p-2 rounded-lg text-otai-text-muted hover:text-otai-purple hover:bg-otai-purple/5 transition-colors"
@@ -706,6 +806,67 @@ export default function OwnerUsers() {
               {saving && <Loader2 size={14} className="animate-spin" />}
               Remove Permanently
             </button>
+          </div>
+        </ModalOverlay>
+      )}
+
+      {/* ============ ASSIGN CLIENTS MODAL ============ */}
+      {showAssignModal && selectedUser && (
+        <ModalOverlay onClose={() => setShowAssignModal(false)}>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-bold text-white">Assign Clients</h2>
+            <button onClick={() => setShowAssignModal(false)} className="text-otai-text-muted hover:text-white">
+              <X size={20} />
+            </button>
+          </div>
+          <p className="text-otai-text-secondary text-sm mb-4">
+            Select which clients <span className="text-white font-medium">{selectedUser.display_name}</span> can manage.
+          </p>
+          {error && (
+            <div className="mb-4 p-3 bg-otai-red/10 border border-otai-red/30 rounded-lg flex items-center gap-2 text-otai-red text-sm">
+              <AlertCircle size={16} /> {error}
+            </div>
+          )}
+          <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+            {allClients.length === 0 ? (
+              <p className="text-otai-text-muted text-sm text-center py-4">No clients in the system yet.</p>
+            ) : (
+              allClients.map((c) => {
+                const personName = c.profiles?.display_name;
+                const label = personName && personName !== c.company_name
+                  ? `${personName} (${c.company_name})`
+                  : c.company_name;
+                const isAssigned = assignedClientIds.includes(c.id);
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => toggleAssignClient(c.id)}
+                    className={`w-full text-left px-4 py-3 rounded-lg border transition-colors text-sm flex items-center justify-between ${
+                      isAssigned
+                        ? "border-blue-500/40 bg-blue-500/10 text-white"
+                        : "border-otai-border text-otai-text-secondary hover:border-blue-500/30"
+                    }`}
+                  >
+                    <span>{label}</span>
+                    {isAssigned && <Check size={14} className="text-blue-400" />}
+                  </button>
+                );
+              })
+            )}
+          </div>
+          <div className="flex items-center justify-between mt-6 pt-4 border-t border-otai-border">
+            <span className="text-xs text-otai-text-muted">{assignedClientIds.length} client{assignedClientIds.length !== 1 ? "s" : ""} selected</span>
+            <div className="flex gap-3">
+              <button onClick={() => setShowAssignModal(false)}
+                className="px-4 py-2 text-sm text-otai-text-secondary hover:text-white transition-colors">
+                Cancel
+              </button>
+              <button onClick={handleSaveAssignments} disabled={saving}
+                className="flex items-center gap-2 px-5 py-2.5 bg-otai-purple hover:bg-otai-purple-hover text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
+                {saving && <Loader2 size={14} className="animate-spin" />}
+                Save Assignments
+              </button>
+            </div>
           </div>
         </ModalOverlay>
       )}
