@@ -18,7 +18,9 @@ async function verifyOwner() {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data: profile } = await supabase
+  // Use service role to check profile (RLS may block anon)
+  const serviceClient = getServiceClient();
+  const { data: profile } = await serviceClient
     .from("profiles")
     .select("role")
     .eq("id", user.id)
@@ -35,7 +37,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = createServerSupabaseClient();
+  const supabase = getServiceClient();
 
   const { data: profiles, error } = await supabase
     .from("profiles")
