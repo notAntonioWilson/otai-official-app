@@ -376,6 +376,22 @@ export default function ServiceDetailPage() {
         {/* Content Calendar */}
         <ContentCalendar posts={calendarPosts} />
 
+        {/* Top Performing Videos — all platforms */}
+        {(ig.top_reels || []).length > 0 && (
+          <div className="bg-otai-dark border border-otai-border rounded-xl p-5 mt-6 mb-2">
+            <h3 className="text-white font-semibold text-sm mb-4 flex items-center gap-2"><Eye size={14} className="text-otai-purple" /> Top Performing Videos</h3>
+            <div className="space-y-2.5">
+              {ig.top_reels.slice(0, 5).map((reel: { title: string; views: string }, i: number) => (
+                <div key={i} className="flex items-center gap-3">
+                  <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${i === 0 ? "bg-otai-gold/20 text-otai-gold" : i === 1 ? "bg-gray-400/20 text-gray-300" : i === 2 ? "bg-orange-500/20 text-orange-400" : "bg-otai-border text-otai-text-muted"}`}>{i+1}</span>
+                  <span className="text-sm text-white flex-1 truncate">{reel.title}</span>
+                  <span className="text-sm font-semibold text-otai-purple">{reel.views}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* ---- FACEBOOK ---- */}
         {fb.views !== undefined && (
           <>
@@ -450,14 +466,14 @@ export default function ServiceDetailPage() {
           </>
         )}
 
-        {/* ---- INSTAGRAM ---- */}
+        {/* ---- INSTAGRAM (Last 90 Days) ---- */}
         {ig.followers !== undefined && (
           <>
-            <SectionTitle icon={Eye} title="Instagram" color="text-pink-400" />
+            <SectionTitle icon={Eye} title="Instagram — Last 90 Days" color="text-pink-400" />
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               <StatCard label="Followers" value={ig.followers?.toLocaleString()} sub={ig.followers_change || ""} color="text-pink-400" tip="Current Instagram follower count." />
-              <StatCard label="Views (90d)" value={ig.views_90d?.toLocaleString() || "0"} color="text-pink-400" tip="Total views in the last 90 days." />
-              <StatCard label="Interactions (90d)" value={ig.interactions_90d?.toLocaleString() || "0"} color="text-pink-400" tip="Total interactions in the last 90 days." />
+              <StatCard label="Views" value={ig.views_90d?.toLocaleString() || "0"} color="text-pink-400" tip="Total views in the last 90 days." />
+              <StatCard label="Interactions" value={ig.interactions_90d?.toLocaleString() || "0"} color="text-pink-400" tip="Total interactions in the last 90 days." />
               <StatCard label="Posts" value={ig.posts?.toLocaleString() || "0"} color="text-pink-400" />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -480,21 +496,6 @@ export default function ServiceDetailPage() {
                 </div>
               </div>
             </div>
-            {/* Top Performing Reels */}
-            {(ig.top_reels || []).length > 0 && (
-              <div className="bg-otai-dark border border-otai-border rounded-xl p-4 mb-6">
-                <p className="text-xs text-otai-text-muted mb-3">Top Performing Reels</p>
-                <div className="space-y-2">
-                  {ig.top_reels.slice(0, 5).map((reel: { title: string; views: string }, i: number) => (
-                    <div key={i} className="flex items-center gap-3">
-                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? "bg-otai-gold/20 text-otai-gold" : i === 1 ? "bg-gray-400/20 text-gray-300" : i === 2 ? "bg-orange-500/20 text-orange-400" : "bg-otai-border text-otai-text-muted"}`}>{i+1}</span>
-                      <span className="text-sm text-white flex-1 truncate">{reel.title}</span>
-                      <span className="text-sm text-pink-400 font-medium">{reel.views}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </>
         )}
 
