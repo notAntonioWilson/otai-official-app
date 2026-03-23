@@ -373,6 +373,9 @@ export default function ServiceDetailPage() {
           <StatCard label="Total Posts" value={overview.total_posts?.toLocaleString() || "—"} tip="Number of posts published across all platforms." />
         </div>
 
+        {/* Content Calendar */}
+        <ContentCalendar posts={calendarPosts} />
+
         {/* ---- FACEBOOK ---- */}
         {fb.views !== undefined && (
           <>
@@ -495,8 +498,7 @@ export default function ServiceDetailPage() {
           </>
         )}
 
-        {/* Content Calendar */}
-        <ContentCalendar posts={calendarPosts} />
+        {/* Content Calendar already shown above */}
       </div>
     );
   }
