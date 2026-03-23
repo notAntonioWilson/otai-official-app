@@ -86,10 +86,10 @@ export default function ClientDashboard() {
                 <div className="w-10 h-10 rounded-xl bg-otai-green/15 flex items-center justify-center"><DollarSign size={20} className="text-otai-green" /></div>
                 <div>
                   <p className="text-xs text-otai-green/70 uppercase tracking-wide">Revenue Generated</p>
-                  <p className="text-3xl font-bold text-otai-green">~$20,000</p>
+                  <p className="text-3xl font-bold text-otai-green">+$25,000</p>
                 </div>
               </div>
-              <p className="text-xs text-otai-text-muted">From qualified leads driven through your website and marketing</p>
+              <p className="text-xs text-otai-text-muted">Direct revenue from leads captured through your website and campaigns</p>
             </div>
             <div className="bg-gradient-to-br from-otai-purple/10 to-otai-purple/5 border border-otai-purple/20 rounded-xl p-5">
               <div className="flex items-center gap-3 mb-3">
