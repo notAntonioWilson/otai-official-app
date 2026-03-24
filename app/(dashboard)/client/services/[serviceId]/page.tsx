@@ -405,13 +405,15 @@ export default function ServiceDetailPage() {
         {fb.views !== undefined && (
           <>
             <SectionTitle icon={Eye} title="Facebook" color="text-blue-400" />
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div className={`grid grid-cols-2 ${fb.engagement ? "md:grid-cols-4" : "md:grid-cols-2"} gap-4 mb-4`}>
               <StatCard label="Total Views" value={fb.views?.toLocaleString() || "0"} color="text-blue-400" tip="Total video and reel views on Facebook." />
-              <StatCard label="3-Second Views" value={fb.three_sec_views?.toLocaleString() || "0"} sub={fb.three_sec_change || ""} color="text-blue-400" tip="Views where someone watched at least 3 seconds." />
-              <StatCard label="Engagement" value={fb.engagement?.toLocaleString() || "0"} sub={fb.engagement_change || ""} color="text-blue-400" tip="Total reactions, comments, and shares." />
-              <StatCard label="Shares" value={fb.shares?.toLocaleString() || "0"} color="text-blue-400" />
+              {fb.three_sec_views > 0 && <StatCard label="3-Second Views" value={fb.three_sec_views?.toLocaleString() || "0"} sub={fb.three_sec_change || ""} color="text-blue-400" tip="Views where someone watched at least 3 seconds." />}
+              {fb.engagement > 0 && <StatCard label="Engagement" value={fb.engagement?.toLocaleString() || "0"} sub={fb.engagement_change || ""} color="text-blue-400" tip="Total reactions, comments, and shares." />}
+              {fb.shares > 0 && <StatCard label="Shares" value={fb.shares?.toLocaleString() || "0"} color="text-blue-400" />}
             </div>
+            {((fb.content_types || []).length > 0 || fb.reactions > 0) && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              {(fb.content_types || []).length > 0 && (
               <div className="bg-otai-dark border border-otai-border rounded-xl p-4">
                 <p className="text-xs text-otai-text-muted mb-2">Views by Content Type</p>
                 {(fb.content_types || []).map((ct: { type: string; pct: string }, i: number) => (
@@ -422,6 +424,8 @@ export default function ServiceDetailPage() {
                   </div>
                 ))}
               </div>
+              )}
+              {fb.reactions > 0 && (
               <div className="bg-otai-dark border border-otai-border rounded-xl p-4">
                 <p className="text-xs text-otai-text-muted mb-2">Engagement Breakdown</p>
                 <div className="flex items-center gap-3 mt-2">
@@ -430,6 +434,8 @@ export default function ServiceDetailPage() {
                   <div className="text-center"><Share2 size={14} className="text-blue-400 mx-auto" /><p className="text-white text-sm font-medium mt-1">{fb.shares?.toLocaleString()}</p><p className="text-[10px] text-otai-text-muted">Shares</p></div>
                 </div>
               </div>
+              )}
+              {fb.non_followers_pct && fb.non_followers_pct !== "—" && (
               <div className="bg-otai-dark border border-otai-border rounded-xl p-4">
                 <p className="text-xs text-otai-text-muted mb-2">Followers vs Non-Followers</p>
                 <div className="flex items-center justify-center gap-4 mt-2">
@@ -440,7 +446,9 @@ export default function ServiceDetailPage() {
                   </div>
                 </div>
               </div>
+              )}
             </div>
+            )}
             {(fb.traffic_sources || []).length > 0 && (
               <div className="bg-otai-dark border border-otai-border rounded-xl p-4 mb-6">
                 <p className="text-xs text-otai-text-muted mb-2">How People Find Your Content</p>
