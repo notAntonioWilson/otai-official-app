@@ -65,6 +65,13 @@ export default function ClientDashboard() {
   const chatbotData = chatbot ? getJson(chatbot.blocks, "chatbot_data") : null;
   const hasData = gsc || overview || chatbotData;
 
+  // Look for impact data across all services
+  let impact = null;
+  for (const svc of services) {
+    const d = getJson(svc.blocks, "dashboard_impact");
+    if (d) { impact = d; break; }
+  }
+
   return (
     <div>
       <div className="mb-8">
@@ -80,28 +87,34 @@ export default function ClientDashboard() {
       ) : (
         <>
           {/* ===== IMPACT HIGHLIGHT ===== */}
+          {impact && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            {impact.revenue && (
             <div className="bg-gradient-to-br from-otai-green/10 to-otai-green/5 border border-otai-green/20 rounded-xl p-5">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-xl bg-otai-green/15 flex items-center justify-center"><DollarSign size={20} className="text-otai-green" /></div>
                 <div>
                   <p className="text-xs text-otai-green/70 uppercase tracking-wide">Revenue Generated</p>
-                  <p className="text-3xl font-bold text-otai-green">+$25,000</p>
+                  <p className="text-3xl font-bold text-otai-green">{impact.revenue}</p>
                 </div>
               </div>
-              <p className="text-xs text-otai-text-muted">Direct revenue from leads captured through your website and campaigns</p>
+              <p className="text-xs text-otai-text-muted">{impact.revenue_note || "Direct revenue from leads captured through your website and campaigns"}</p>
             </div>
+            )}
+            {impact.hire_requests && (
             <div className="bg-gradient-to-br from-otai-purple/10 to-otai-purple/5 border border-otai-purple/20 rounded-xl p-5">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-xl bg-otai-purple/15 flex items-center justify-center"><Briefcase size={20} className="text-otai-purple" /></div>
                 <div>
                   <p className="text-xs text-otai-purple/70 uppercase tracking-wide">Hire Requests</p>
-                  <p className="text-3xl font-bold text-otai-purple">6</p>
+                  <p className="text-3xl font-bold text-otai-purple">{impact.hire_requests}</p>
                 </div>
               </div>
-              <p className="text-xs text-otai-text-muted">Requests to hire via website and social media channels</p>
+              <p className="text-xs text-otai-text-muted">{impact.hire_note || "Requests to hire via website and social media channels"}</p>
             </div>
+            )}
           </div>
+          )}
 
           {/* ===== SERVICE OVERVIEW CARDS ===== */}
           <div className="space-y-4">
