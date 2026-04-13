@@ -4,7 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   BarChart3, Pencil, Save, X, Check, Loader2, RefreshCw,
-  Trophy, ChevronDown,
+  Trophy, ChevronDown, DollarSign, Rocket, Target, Star, Flame,
+  Shield, Crown, Users, ChevronRight, Zap,
 } from "lucide-react";
 
 interface ProfileRow {
@@ -36,6 +37,7 @@ export default function OwnerSalesOversight() {
   const [editForm, setEditForm] = useState({ total_calls: 0, total_answers: 0, callbacks: 0, send_info: 0, bookings: 0 });
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState("");
+  const [showCommission, setShowCommission] = useState(false);
 
   const loadData = useCallback(async () => {
     const supabase = createClient();
@@ -123,9 +125,14 @@ export default function OwnerSalesOversight() {
         <h1 className="text-2xl font-bold text-white flex items-center gap-2">
           <BarChart3 size={24} className="text-otai-purple" /> Sales Oversight
         </h1>
-        <button onClick={loadData} className="flex items-center gap-2 px-3 py-2 bg-otai-dark border border-otai-border rounded-lg text-otai-text-secondary hover:text-white text-sm">
-          <RefreshCw size={14} /> Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowCommission(true)} className="flex items-center gap-2 px-3 py-2 bg-otai-gold/10 border border-otai-gold/30 rounded-lg text-otai-gold hover:bg-otai-gold/20 text-sm font-medium">
+            <DollarSign size={14} /> Commission
+          </button>
+          <button onClick={loadData} className="flex items-center gap-2 px-3 py-2 bg-otai-dark border border-otai-border rounded-lg text-otai-text-secondary hover:text-white text-sm">
+            <RefreshCw size={14} /> Refresh
+          </button>
+        </div>
       </div>
 
       {success && (
@@ -249,6 +256,44 @@ export default function OwnerSalesOversight() {
           </div>
         )}
       </div>
+
+      {/* Commission Modal */}
+      {showCommission && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80" onClick={() => setShowCommission(false)} />
+          <div className="relative bg-black border border-otai-border rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto z-10 p-6">
+            <div className="flex items-center justify-between mb-6 sticky top-0 bg-black pb-4 border-b border-otai-border -mx-6 px-6 -mt-6 pt-6">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2"><Trophy size={20} className="text-otai-gold" /> Commission & Ranking System</h2>
+              <button onClick={() => setShowCommission(false)} className="p-2 rounded-lg text-otai-text-muted hover:text-white hover:bg-white/5"><X size={20} /></button>
+            </div>
+            <div className="space-y-4">
+              <CommissionTier title="Starting Point" subtitle="Where every champion begins" color="#1E3A5F" border="#2563EB" icon={Rocket}
+                stats={[{label:"Commission Rate",value:"20%"},{label:"Monthly Retaining",value:"3%"}]} />
+              <CommissionTier title="Monthly Winner Bonus" subtitle="Compete to be #1" color="#4C1D95" border="#7C3AED" icon={Trophy}
+                stats={[{label:"Reward",value:"+0.5%"},{label:"Type",value:"Permanent"}]}
+                body="The person with the most bookings at the end of each month gets a permanent 0.5% commission increase." />
+              <CommissionTier title="Level 1: Consistent Performer" subtitle="150 bookings per month" color="#14532D" border="#22C55E" icon={Target}
+                stats={[{label:"Monthly Goal",value:"150"},{label:"Daily Target",value:"5"},{label:"Commission",value:"+5%"}]}
+                body="That's just 5 bookings per day. Achievable with focus and consistency." />
+              <CommissionTier title="Level 2: Career Milestone" subtitle="500 total bookings (lifetime)" color="#7C2D12" border="#F97316" icon={Star}
+                stats={[{label:"Total Bookings",value:"500"},{label:"Commission",value:"+5%"}]}
+                body="Unlocks sales calls, Zoom meetings, and closing training." />
+              <CommissionTier title="Level 3: Elite Status" subtitle="500 bookings in a single month" color="#7F1D1D" border="#EF4444" icon={Flame}
+                stats={[{label:"Monthly Goal",value:"500"},{label:"Daily Target",value:"~17"},{label:"Commission",value:"+10%"}]}
+                body="This is where legends are made. ~17 bookings per day with the right systems." />
+              <CommissionTier title="Level 4: Closer Training" subtitle="Owner approval required" color="#134E4A" border="#14B8A6" icon={Shield}
+                stats={[{label:"Commission",value:"+15%"},{label:"Retaining",value:"5%"}]}
+                body="Start closing calls with supervision, then independently." />
+              <CommissionTier title="Level 5: Master Closer" subtitle="15 successful closes" color="#713F12" border="#EAB308" icon={Crown}
+                stats={[{label:"Close Commission",value:"40%"},{label:"Recurring",value:"10%"}]}
+                body="Highest individual tier. 40% on closes, 10% recurring monthly." />
+              <CommissionTier title="Level 6: Team Leader" subtitle="Build your own sales team" color="#6B1A1A" border="#DC2626" icon={Users}
+                stats={[]}
+                body="Earn a percentage of all team bookings and closes. This is where real wealth is built." />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -259,5 +304,36 @@ function EditCell({ value, onChange }: { value: number; onChange: (v: number) =>
       <input type="number" min="0" value={value} onChange={(e) => onChange(Number(e.target.value) || 0)}
         className="w-16 bg-black border border-otai-purple rounded px-2 py-1 text-white text-sm text-right focus:outline-none" />
     </td>
+  );
+}
+
+function CommissionTier({ title, subtitle, color, border, icon: Icon, stats, body }: {
+  title: string; subtitle: string; color: string; border: string;
+  icon: React.ElementType; stats: { label: string; value: string }[];
+  body?: string;
+}) {
+  return (
+    <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${border}30` }}>
+      <div className="p-4 flex items-center gap-3" style={{ backgroundColor: `${color}40` }}>
+        <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${border}20` }}>
+          <Icon size={18} style={{ color: border }} />
+        </div>
+        <div>
+          <h3 className="text-white font-bold text-sm">{title}</h3>
+          <p className="text-[11px]" style={{ color: `${border}CC` }}>{subtitle}</p>
+        </div>
+      </div>
+      {stats.length > 0 && (
+        <div className="flex flex-wrap gap-4 px-4 py-3" style={{ backgroundColor: `${color}20` }}>
+          {stats.map((s, i) => (
+            <div key={i}>
+              <p className="text-[10px] text-otai-text-muted uppercase">{s.label}</p>
+              <p className="text-sm font-bold" style={{ color: border }}>{s.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      {body && <div className="px-4 py-3" style={{ backgroundColor: `${color}10` }}><p className="text-xs text-otai-text-secondary leading-relaxed">{body}</p></div>}
+    </div>
   );
 }
