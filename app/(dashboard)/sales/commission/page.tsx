@@ -233,5 +233,3 @@ export default function SalesCommission() {
     </div>
   );
 }
-
-export { TIERS, TierCard };
