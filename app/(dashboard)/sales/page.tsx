@@ -136,11 +136,6 @@ export default function SalesLeaderboard() {
     const sendInfo = Number(formData.send_info) || 0;
     const bookings = Number(formData.bookings) || 0;
 
-    if (calls === 0) {
-      setError("Total calls is required.");
-      return;
-    }
-
     setSaving(true);
     const supabase = createClient();
     const estToday = getESTDate();
@@ -262,7 +257,6 @@ export default function SalesLeaderboard() {
               </label>
               <input
                 type="number"
-                min="0"
                 value={formData[key as keyof typeof formData]}
                 onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
                 className="w-full bg-black border border-otai-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-otai-purple"

@@ -84,33 +84,24 @@ export default function OwnerSalesOversight() {
 
   const saveEdit = async (report: DailyReport) => {
     setSaving(true);
-    const supabase = createClient();
 
-    const { error } = await supabase.from("sales_daily_reports").update({
-      total_calls: editForm.total_calls,
-      total_answers: editForm.total_answers,
-      callbacks: editForm.callbacks,
-      send_info: editForm.send_info,
-      bookings: editForm.bookings,
-      updated_at: new Date().toISOString(),
-    }).eq("id", report.id);
-
-    if (!error) {
-      // Audit trail
-      await supabase.from("audit_trail").insert({
-        user_id: userId,
-        action: "edit_data",
-        target_table: "sales_daily_reports",
-        target_id: report.id,
+    const res = await fetch("/api/sales-oversight", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: report.id,
+        ...editForm,
+        owner_id: userId,
         old_value: {
           total_calls: report.total_calls, total_answers: report.total_answers,
           callbacks: report.callbacks, send_info: report.send_info, bookings: report.bookings,
         },
-        new_value: editForm,
-      });
-    }
+      }),
+    });
 
+    const data = await res.json();
     setSaving(false);
+    if (data.error) { setSuccess(""); return; }
     setEditingId(null);
     setSuccess("Numbers updated (logged in audit trail).");
     setTimeout(() => setSuccess(""), 3000);
@@ -301,7 +292,7 @@ export default function OwnerSalesOversight() {
 function EditCell({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   return (
     <td className="p-2 text-right">
-      <input type="number" min="0" value={value} onChange={(e) => onChange(Number(e.target.value) || 0)}
+      <input type="number" value={value} onChange={(e) => onChange(Number(e.target.value) || 0)}
         className="w-16 bg-black border border-otai-purple rounded px-2 py-1 text-white text-sm text-right focus:outline-none" />
     </td>
   );
