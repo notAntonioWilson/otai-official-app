@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { Profile, Client, ClientService, ServiceType } from "@/types";
+import type { Profile, Client, ClientService } from "@/types";
 import {
   LayoutDashboard, Bell, Settings, Home, MoreHorizontal, X,
-  Globe, MessageSquare, Phone, Zap, Share2, Mail, Smartphone, Puzzle, LogOut,
+  Globe, MessageSquare, Phone, Zap, Share2, Mail, Smartphone, Puzzle,
+  LogOut, Lock, ChevronRight,
 } from "lucide-react";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -33,6 +34,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const [profile, setProfile] = useState<Profile | null>(null);
   const [client, setClient] = useState<Client | null>(null);
   const [services, setServices] = useState<ClientService[]>([]);
+  const [servicesOpen, setServicesOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const pathname = usePathname();
@@ -92,6 +94,26 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     return pathname.startsWith(href);
   };
 
+  const onServiceTab = services.some((s) => pathname.startsWith(`/client/services/${s.id}`));
+
+  // For the services tab: single service → navigate directly; multi → open sheet
+  const handleServicesTab = () => {
+    if (services.length === 0) return;
+    if (services.length === 1) {
+      window.location.href = `/client/services/${services[0].id}`;
+    } else {
+      setServicesOpen(true);
+    }
+  };
+
+  const singleService = services.length === 1 ? services[0] : null;
+  const ServicesTabIcon = singleService
+    ? (SERVICE_ICONS[singleService.service_type] || Puzzle)
+    : Puzzle;
+  const servicesTabLabel = singleService
+    ? (singleService.custom_service_name || SERVICE_NAMES[singleService.service_type] || "Service")
+    : "Services";
+
   return (
     <div className="min-h-screen bg-black">
       {/* Desktop Sidebar */}
@@ -148,83 +170,159 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         </div>
       </main>
 
-      {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-otai-dark border-t border-otai-border h-16 flex items-center justify-around px-2 z-50">
-        <a
-          href="/client/updates"
-          className={`flex flex-col items-center gap-1 text-xs ${
-            pathname === "/client/updates" ? "text-otai-purple" : "text-otai-text-secondary"
-          }`}
-        >
-          <Bell size={20} />
-          <span>Updates</span>
-        </a>
-        <a
-          href="/client"
-          className={`flex flex-col items-center gap-1 text-xs ${
-            pathname === "/client" ? "text-otai-purple" : "text-otai-text-secondary"
-          }`}
-        >
-          <Home size={20} />
-          <span>Home</span>
-        </a>
-        <button
-          onClick={() => setMoreOpen(true)}
-          className={`flex flex-col items-center gap-1 text-xs ${
-            moreOpen ? "text-otai-purple" : "text-otai-text-secondary"
-          }`}
-        >
-          <MoreHorizontal size={20} />
-          <span>More</span>
-        </button>
+      {/* Mobile Bottom Nav — 5 slots */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-otai-dark border-t border-otai-border z-50"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <div className="h-16 flex items-center justify-around px-1">
+
+          {/* Updates */}
+          <a
+            href="/client/updates"
+            className={`flex flex-col items-center gap-0.5 px-2 min-w-0 flex-1 ${
+              pathname === "/client/updates" ? "text-otai-purple" : "text-otai-text-secondary"
+            }`}
+          >
+            <Bell size={20} />
+            <span className="text-[10px] leading-tight truncate">Updates</span>
+          </a>
+
+          {/* Services */}
+          <button
+            onClick={handleServicesTab}
+            className={`flex flex-col items-center gap-0.5 px-2 min-w-0 flex-1 ${
+              onServiceTab || servicesOpen ? "text-otai-purple" : "text-otai-text-secondary"
+            }`}
+          >
+            <ServicesTabIcon size={20} />
+            <span className="text-[10px] leading-tight truncate max-w-[56px]">{servicesTabLabel}</span>
+          </button>
+
+          {/* Home — center, elevated */}
+          <a
+            href="/client"
+            className="flex flex-col items-center gap-0.5 px-1 flex-shrink-0"
+          >
+            <div className={`w-12 h-12 rounded-full flex flex-col items-center justify-center -mt-5 border-2 shadow-lg transition-colors ${
+              pathname === "/client"
+                ? "bg-otai-purple border-otai-purple text-white"
+                : "bg-otai-dark border-otai-border text-otai-text-secondary"
+            }`}>
+              <Home size={20} />
+            </div>
+            <span className={`text-[10px] leading-tight mt-0.5 ${pathname === "/client" ? "text-otai-purple" : "text-otai-text-secondary"}`}>
+              Home
+            </span>
+          </a>
+
+          {/* Coming Soon */}
+          <button
+            disabled
+            className="flex flex-col items-center gap-0.5 px-2 min-w-0 flex-1 text-otai-text-muted opacity-50 cursor-not-allowed"
+          >
+            <Lock size={20} />
+            <span className="text-[10px] leading-tight truncate">Coming Soon</span>
+          </button>
+
+          {/* More */}
+          <button
+            onClick={() => setMoreOpen(true)}
+            className={`flex flex-col items-center gap-0.5 px-2 min-w-0 flex-1 ${
+              moreOpen ? "text-otai-purple" : "text-otai-text-secondary"
+            }`}
+          >
+            <MoreHorizontal size={20} />
+            <span className="text-[10px] leading-tight truncate">More</span>
+          </button>
+
+        </div>
       </nav>
 
-      {/* Mobile More Drawer */}
-      {moreOpen && (
+      {/* Services Bottom Sheet (multi-service) */}
+      {servicesOpen && (
         <div className="md:hidden fixed inset-0 z-[60]">
-          <div className="absolute inset-0 bg-black/70" onClick={() => setMoreOpen(false)} />
-          <div className="absolute bottom-0 left-0 right-0 bg-otai-dark border-t border-otai-border rounded-t-2xl max-h-[70vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-otai-border">
-              <span className="text-white font-semibold">More</span>
-              <button onClick={() => setMoreOpen(false)}>
-                <X size={20} className="text-otai-text-secondary" />
+          <div className="absolute inset-0 bg-black/70" onClick={() => setServicesOpen(false)} />
+          <div className="absolute bottom-0 left-0 right-0 bg-otai-dark border-t border-otai-border rounded-t-2xl z-10"
+            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-otai-border">
+              <span className="text-white font-semibold text-base">Your Services</span>
+              <button onClick={() => setServicesOpen(false)} className="p-1 text-otai-text-secondary hover:text-white">
+                <X size={20} />
               </button>
             </div>
-            <div className="p-2 space-y-1">
+            <div className="p-3 space-y-1">
               {services.map((s) => {
                 const Icon = SERVICE_ICONS[s.service_type] || Puzzle;
                 const name = s.custom_service_name || SERVICE_NAMES[s.service_type] || s.service_type;
                 const href = `/client/services/${s.id}`;
+                const active = isActive(href);
                 return (
                   <a
                     key={s.id}
                     href={href}
-                    onClick={() => setMoreOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm ${
-                      isActive(href)
+                    onClick={() => setServicesOpen(false)}
+                    className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm transition-colors ${
+                      active
                         ? "bg-otai-purple/20 text-otai-purple"
-                        : "text-otai-text-secondary hover:bg-white/5"
+                        : "text-white hover:bg-white/5"
                     }`}
                   >
-                    <Icon size={18} />
-                    <span>{name}</span>
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                      active ? "bg-otai-purple/30" : "bg-white/5"
+                    }`}>
+                      <Icon size={18} />
+                    </div>
+                    <span className="font-medium">{name}</span>
+                    <ChevronRight size={16} className="ml-auto text-otai-text-muted" />
                   </a>
                 );
               })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* More Bottom Sheet */}
+      {moreOpen && (
+        <div className="md:hidden fixed inset-0 z-[60]">
+          <div className="absolute inset-0 bg-black/70" onClick={() => setMoreOpen(false)} />
+          <div className="absolute bottom-0 left-0 right-0 bg-otai-dark border-t border-otai-border rounded-t-2xl z-10"
+            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-otai-border">
+              <span className="text-white font-semibold text-base">More</span>
+              <button onClick={() => setMoreOpen(false)} className="p-1 text-otai-text-secondary hover:text-white">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-3 space-y-1">
+              {profile?.display_name && (
+                <div className="px-4 py-3 mb-1">
+                  <p className="text-xs text-otai-text-muted">Signed in as</p>
+                  <p className="text-sm text-white font-medium">{profile.display_name}</p>
+                </div>
+              )}
               <a
                 href="/client/settings"
                 onClick={() => setMoreOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm text-otai-text-secondary hover:bg-white/5"
+                className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm transition-colors ${
+                  pathname === "/client/settings"
+                    ? "bg-otai-purple/20 text-otai-purple"
+                    : "text-white hover:bg-white/5"
+                }`}
               >
-                <Settings size={18} />
-                <span>Settings</span>
+                <div className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                  <Settings size={18} />
+                </div>
+                <span className="font-medium">Settings</span>
+                <ChevronRight size={16} className="ml-auto text-otai-text-muted" />
               </a>
               <button
                 onClick={handleSignOut}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm text-otai-red hover:bg-white/5 w-full"
+                className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm text-otai-red hover:bg-white/5 w-full"
               >
-                <LogOut size={18} />
-                <span>Sign Out</span>
+                <div className="w-9 h-9 rounded-lg bg-otai-red/10 flex items-center justify-center shrink-0">
+                  <LogOut size={18} />
+                </div>
+                <span className="font-medium">Sign Out</span>
               </button>
             </div>
           </div>

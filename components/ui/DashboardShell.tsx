@@ -129,75 +129,103 @@ export default function DashboardShell({
       </main>
 
       {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-otai-dark border-t border-otai-border h-16 flex items-center justify-around px-2 z-50">
-        {mobileMainTabs.map((item) => {
-          const Icon = item.icon;
-          return (
-            <a
-              key={item.href}
-              href={item.href}
-              className={`flex flex-col items-center gap-1 text-xs ${
-                isActive(item.href) ? "text-otai-purple" : "text-otai-text-secondary"
-              }`}
-            >
-              <Icon size={20} />
-              <span>{item.name}</span>
-            </a>
-          );
-        })}
-        <button
-          onClick={() => setMoreOpen(true)}
-          className="flex flex-col items-center gap-1 text-xs text-otai-text-secondary"
-        >
-          <MoreHorizontal size={20} />
-          <span>More</span>
-        </button>
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-otai-dark border-t border-otai-border z-50"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <div className="h-16 flex items-center justify-around px-1">
+          {mobileMainTabs.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.href);
+            return (
+              <a
+                key={item.href}
+                href={item.href}
+                className={`flex flex-col items-center gap-0.5 px-2 min-w-0 flex-1 transition-colors ${
+                  active ? "text-otai-purple" : "text-otai-text-secondary"
+                }`}
+              >
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
+                  active ? "bg-otai-purple/20" : ""
+                }`}>
+                  <Icon size={19} />
+                </div>
+                <span className="text-[10px] leading-tight truncate">{item.name}</span>
+              </a>
+            );
+          })}
+          <button
+            onClick={() => setMoreOpen(true)}
+            className={`flex flex-col items-center gap-0.5 px-2 min-w-0 flex-1 transition-colors ${
+              moreOpen ? "text-otai-purple" : "text-otai-text-secondary"
+            }`}
+          >
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
+              moreOpen ? "bg-otai-purple/20" : ""
+            }`}>
+              <MoreHorizontal size={19} />
+            </div>
+            <span className="text-[10px] leading-tight">More</span>
+          </button>
+        </div>
       </nav>
 
       {/* Mobile More Drawer */}
       {moreOpen && (
         <div className="md:hidden fixed inset-0 z-[60]">
           <div className="absolute inset-0 bg-black/70" onClick={() => setMoreOpen(false)} />
-          <div className="absolute bottom-0 left-0 right-0 bg-otai-dark border-t border-otai-border rounded-t-2xl max-h-[70vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-otai-border">
-              <span className="text-white font-semibold">More</span>
-              <button onClick={() => setMoreOpen(false)}>
-                <X size={20} className="text-otai-text-secondary" />
+          <div className="absolute bottom-0 left-0 right-0 bg-otai-dark border-t border-otai-border rounded-t-2xl z-10"
+            style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-otai-border">
+              <span className="text-white font-semibold text-base">More</span>
+              <button onClick={() => setMoreOpen(false)} className="p-1 text-otai-text-secondary hover:text-white">
+                <X size={20} />
               </button>
             </div>
-            <div className="p-2 space-y-1">
+            <div className="p-3 space-y-1">
               {mobileMoreItems.map((item) => {
                 const Icon = item.icon;
+                const active = isActive(item.href);
                 return (
                   <a
                     key={item.href}
                     href={item.href}
                     onClick={() => setMoreOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm ${
-                      isActive(item.href)
+                    className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm transition-colors ${
+                      active
                         ? "bg-otai-purple/20 text-otai-purple"
-                        : "text-otai-text-secondary hover:bg-white/5"
+                        : "text-white hover:bg-white/5"
                     }`}
                   >
-                    <Icon size={18} />
-                    <span>{item.name}</span>
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                      active ? "bg-otai-purple/30" : "bg-white/5"
+                    }`}>
+                      <Icon size={18} />
+                    </div>
+                    <span className="font-medium">{item.name}</span>
                   </a>
                 );
               })}
               <a
                 href={settingsHref}
                 onClick={() => setMoreOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm text-otai-text-secondary hover:bg-white/5"
+                className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm transition-colors ${
+                  pathname === settingsHref
+                    ? "bg-otai-purple/20 text-otai-purple"
+                    : "text-white hover:bg-white/5"
+                }`}
               >
-                <Settings size={18} />
-                <span>Settings</span>
+                <div className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                  <Settings size={18} />
+                </div>
+                <span className="font-medium">Settings</span>
               </a>
               <button
                 onClick={handleSignOut}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm text-otai-red hover:bg-white/5 w-full"
+                className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm text-otai-red hover:bg-white/5 w-full"
               >
-                <LogOut size={18} />
-                <span>Sign Out</span>
+                <div className="w-9 h-9 rounded-lg bg-otai-red/10 flex items-center justify-center shrink-0">
+                  <LogOut size={18} />
+                </div>
+                <span className="font-medium">Sign Out</span>
               </button>
             </div>
           </div>
