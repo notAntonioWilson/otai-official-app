@@ -120,19 +120,19 @@ export default function OwnerMarketingOversight() {
     if (!form.client_id || !form.scheduled_date) { setError("Client and date required."); return; }
     setSaving(true); setError("");
 
-    // Upload any new files
+    // Upload directly to Supabase Storage (bypasses Vercel 4.5MB limit)
     let finalUrls: string[] = mediaPreviews.filter((p) => p.startsWith("http"));
     if (mediaFiles.length > 0) {
       setUploading(true);
+      const { createClient: createBrowserClient } = await import("@/lib/supabase/client");
+      const supabaseStorage = createBrowserClient();
       for (const file of mediaFiles) {
-        const fd = new FormData();
-        fd.append("file", file);
-        try {
-          const upRes = await fetch("/api/upload", { method: "POST", body: fd });
-          const upData = await upRes.json();
-          if (upData.error) { setError("Upload failed: " + upData.error); setSaving(false); setUploading(false); return; }
-          finalUrls.push(upData.url);
-        } catch { setError("Upload failed"); setSaving(false); setUploading(false); return; }
+        const ext = file.name.split(".").pop() || "bin";
+        const path = `marketing/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error: upErr } = await supabaseStorage.storage.from("uploads").upload(path, file, { contentType: file.type, upsert: false });
+        if (upErr) { setError("Upload failed: " + upErr.message); setSaving(false); setUploading(false); return; }
+        const { data: urlData } = supabaseStorage.storage.from("uploads").getPublicUrl(path);
+        finalUrls.push(urlData.publicUrl);
       }
       setUploading(false);
     }
