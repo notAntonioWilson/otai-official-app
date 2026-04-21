@@ -32,12 +32,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true });
     }
     if (action === "add_post") {
-      const { error } = await supabase.from("marketing_calendar").insert({ client_id: payload.client_id, marketer_id: payload.marketer_id, platform: payload.platform, post_type: payload.post_type, scheduled_date: payload.scheduled_date, description: payload.description || null, status: "planned" });
+      const { error } = await supabase.from("marketing_calendar").insert({ client_id: payload.client_id, marketer_id: payload.marketer_id, platform: payload.platform, post_type: payload.post_type, scheduled_date: payload.scheduled_date, description: payload.description || null, media_url: payload.media_url || null, media_urls: payload.media_urls || [], status: "planned" });
       if (error) return NextResponse.json({ error: error.message }, { status: 400 });
       return NextResponse.json({ success: true });
     }
     if (action === "update_post") {
-      const { error } = await supabase.from("marketing_calendar").update({ client_id: payload.client_id, platform: payload.platform, post_type: payload.post_type, scheduled_date: payload.scheduled_date, description: payload.description || null }).eq("id", payload.id);
+      const { error } = await supabase.from("marketing_calendar").update({ client_id: payload.client_id, platform: payload.platform, post_type: payload.post_type, scheduled_date: payload.scheduled_date, description: payload.description || null, media_url: payload.media_url || null, media_urls: payload.media_urls || [] }).eq("id", payload.id);
       if (error) return NextResponse.json({ error: error.message }, { status: 400 });
       return NextResponse.json({ success: true });
     }

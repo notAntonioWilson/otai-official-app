@@ -16,6 +16,7 @@ interface CalendarPost {
   scheduled_date: string;
   status: string;
   media_url?: string | null;
+  media_urls?: string[];
 }
 
 interface ClientOption {
@@ -61,8 +62,8 @@ export default function MarketingCalendar() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [form, setForm] = useState({ client_id: "", platform: "instagram", post_type: "Post", scheduled_date: "", description: "" });
-  const [mediaFile, setMediaFile] = useState<File | null>(null);
-  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [mediaPreviews, setMediaPreviews] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
 
   const weekDays = getWeekDays(weekRef);
@@ -95,14 +96,29 @@ export default function MarketingCalendar() {
   const openAdd = (dateStr?: string) => {
     setEditingPost(null);
     setForm({ client_id: clients[0]?.id || "otai", platform: "instagram", post_type: "Post", scheduled_date: dateStr || toDateStr(estNow()), description: "" });
-    setMediaFile(null); setMediaPreview(null);
+    setMediaFiles([]); setMediaPreviews([]);
     setShowModal(true); setError("");
   };
   const openEdit = (post: CalendarPost) => {
     setEditingPost(post);
     setForm({ client_id: post.client_id, platform: post.platform, post_type: post.post_type, scheduled_date: post.scheduled_date, description: post.description || "" });
-    setMediaFile(null); setMediaPreview(post.media_url || null);
+    setMediaFiles([]);
+    const existing = post.media_urls && post.media_urls.length > 0 ? post.media_urls : post.media_url ? [post.media_url] : [];
+    setMediaPreviews(existing);
     setShowModal(true); setError("");
+  };
+
+  const addMediaFiles = (files: FileList | null) => {
+    if (!files) return;
+    const newFiles = Array.from(files);
+    const newPreviews = newFiles.map((f) => URL.createObjectURL(f));
+    setMediaFiles((prev) => [...prev, ...newFiles]);
+    setMediaPreviews((prev) => [...prev, ...newPreviews]);
+  };
+
+  const removeMedia = (idx: number) => {
+    setMediaFiles((prev) => prev.filter((_, i) => i !== idx));
+    setMediaPreviews((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const handleSave = async () => {
@@ -110,25 +126,27 @@ export default function MarketingCalendar() {
     if (!form.scheduled_date) { setError("Select a date."); return; }
     setSaving(true); setError("");
 
-    // Upload media if present
-    let mediaUrl = mediaPreview;
-    if (mediaFile) {
+    // Upload any new local files
+    let finalUrls: string[] = mediaPreviews.filter((p) => p.startsWith("http"));
+    if (mediaFiles.length > 0) {
       setUploading(true);
-      const fd = new FormData();
-      fd.append("file", mediaFile);
-      try {
-        const upRes = await fetch("/api/upload", { method: "POST", body: fd });
-        const upData = await upRes.json();
-        if (upData.error) { setError("Upload failed: " + upData.error); setSaving(false); setUploading(false); return; }
-        mediaUrl = upData.url;
-      } catch { setError("Upload failed"); setSaving(false); setUploading(false); return; }
+      for (const file of mediaFiles) {
+        const fd = new FormData();
+        fd.append("file", file);
+        try {
+          const upRes = await fetch("/api/upload", { method: "POST", body: fd });
+          const upData = await upRes.json();
+          if (upData.error) { setError("Upload failed: " + upData.error); setSaving(false); setUploading(false); return; }
+          finalUrls.push(upData.url);
+        } catch { setError("Upload failed"); setSaving(false); setUploading(false); return; }
+      }
       setUploading(false);
     }
 
     const action = editingPost ? "update_post" : "add_post";
     const payload = editingPost
-      ? { action, id: editingPost.id, client_id: form.client_id, platform: form.platform, post_type: form.post_type.toLowerCase(), scheduled_date: form.scheduled_date, description: form.description || null, media_url: mediaUrl || null }
-      : { action, client_id: form.client_id, platform: form.platform, post_type: form.post_type.toLowerCase(), scheduled_date: form.scheduled_date, description: form.description || null, media_url: mediaUrl || null };
+      ? { action, id: editingPost.id, client_id: form.client_id, platform: form.platform, post_type: form.post_type.toLowerCase(), scheduled_date: form.scheduled_date, description: form.description || null, media_url: finalUrls[0] || null, media_urls: finalUrls }
+      : { action, client_id: form.client_id, platform: form.platform, post_type: form.post_type.toLowerCase(), scheduled_date: form.scheduled_date, description: form.description || null, media_url: finalUrls[0] || null, media_urls: finalUrls };
     try {
       const res = await fetch("/api/marketing", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const result = await res.json();
@@ -183,7 +201,11 @@ export default function MarketingCalendar() {
                   const name = clientMap[post.client_id] || "—";
                   return (
                     <div key={post.id} className={`group relative px-2 py-1.5 rounded-lg border text-[10px] cursor-pointer ${plat.color}`} onClick={() => openEdit(post)}>
-                      <div className="flex items-center gap-1"><span className="font-bold">{plat.label}</span><span className="truncate">{name.split(" ")[0]}</span></div>
+                      <div className="flex items-center gap-1">
+                        <span className="font-bold">{plat.label}</span>
+                        <span className="truncate">{name.split(" ")[0]}</span>
+                        {((post.media_urls && post.media_urls.length > 0) || post.media_url) && <span className="ml-auto">📎</span>}
+                      </div>
                       <div className="text-[9px] opacity-70 capitalize">{post.post_type}</div>
                       <button onClick={(e) => { e.stopPropagation(); handleDelete(post.id); }} className="absolute top-1 right-1 hidden group-hover:block p-0.5 rounded bg-black/50"><Trash2 size={10} /></button>
                     </div>
@@ -247,25 +269,35 @@ export default function MarketingCalendar() {
                   className="w-full bg-black border border-otai-border rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-otai-purple resize-none" placeholder="Brief note about this post..." />
               </div>
               <div>
-                <label className="block text-xs text-otai-text-muted uppercase tracking-wide mb-1.5">Media (optional)</label>
-                {mediaPreview ? (
-                  <div className="relative">
-                    {mediaPreview.match(/\.(mp4|mov|webm)$/i) ? (
-                      <video src={mediaPreview} className="w-full h-32 object-cover rounded-lg border border-otai-border" controls />
-                    ) : (
-                      <img src={mediaPreview} alt="Preview" className="w-full h-32 object-cover rounded-lg border border-otai-border" />
-                    )}
-                    <button onClick={() => { setMediaFile(null); setMediaPreview(null); }} className="absolute top-1 right-1 p-1 bg-black/70 rounded-full text-white hover:bg-black"><X size={12} /></button>
+                <label className="block text-xs text-otai-text-muted uppercase tracking-wide mb-1.5">
+                  Media {form.post_type === "Carousel" ? "(multiple images/videos)" : "(optional)"}
+                </label>
+                {mediaPreviews.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 mb-2">
+                    {mediaPreviews.map((src, idx) => (
+                      <div key={idx} className="relative">
+                        {src.match(/\.(mp4|mov|webm)$/i) ? (
+                          <video src={src} className="w-full h-20 object-cover rounded-lg border border-otai-border" />
+                        ) : (
+                          <img src={src} alt="" className="w-full h-20 object-cover rounded-lg border border-otai-border" />
+                        )}
+                        <button onClick={() => removeMedia(idx)} className="absolute top-0.5 right-0.5 p-0.5 bg-black/70 rounded-full text-white hover:bg-black"><X size={10} /></button>
+                        {idx === 0 && <span className="absolute bottom-0.5 left-0.5 text-[9px] bg-black/70 text-white px-1 rounded">Cover</span>}
+                      </div>
+                    ))}
                   </div>
-                ) : (
-                  <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-otai-border rounded-lg cursor-pointer hover:border-otai-purple/40 transition-colors"
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) { setMediaFile(f); setMediaPreview(URL.createObjectURL(f)); } }}>
-                    <input type="file" accept="image/*,video/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setMediaFile(f); setMediaPreview(URL.createObjectURL(f)); } }} />
-                    <span className="text-otai-text-muted text-xs">Drop image or video here, or click to browse</span>
-                    {uploading && <Loader2 size={14} className="animate-spin text-otai-purple mt-1" />}
-                  </label>
                 )}
+                <label
+                  className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-otai-border rounded-lg cursor-pointer hover:border-otai-purple/40 transition-colors"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => { e.preventDefault(); addMediaFiles(e.dataTransfer.files); }}
+                >
+                  <input type="file" accept="image/*,video/*" multiple className="hidden" onChange={(e) => addMediaFiles(e.target.files)} />
+                  <span className="text-otai-text-muted text-xs text-center px-2">
+                    {form.post_type === "Carousel" ? "Drop multiple images/videos, or click to browse" : "Drop image or video here, or click to browse"}
+                  </span>
+                  {uploading && <Loader2 size={14} className="animate-spin text-otai-purple mt-1" />}
+                </label>
               </div>
             </div>
             <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-otai-border">

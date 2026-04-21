@@ -108,7 +108,7 @@ const PLAT_COLORS: Record<string, string> = {
 };
 const PLAT_LABELS: Record<string, string> = { instagram: "IG", facebook: "FB", linkedin: "LI", x: "X", youtube: "YT", tiktok: "TT" };
 
-interface CalendarPost { id: string; platform: string; post_type: string; description: string | null; scheduled_date: string; status: string; media_url?: string | null; }
+interface CalendarPost { id: string; platform: string; post_type: string; description: string | null; scheduled_date: string; status: string; media_url?: string | null; media_urls?: string[] | null; }
 
 function ContentCalendar({ posts }: { posts: CalendarPost[] }) {
   const [weekRef, setWeekRef] = useState(estNow());
@@ -157,15 +157,35 @@ function ContentCalendar({ posts }: { posts: CalendarPost[] }) {
             <span className="text-otai-text-muted text-xs ml-auto">{new Date(sel.scheduled_date+"T12:00:00").toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"})}</span>
           </div>
           {sel.description && <p className="text-otai-text-secondary text-sm mt-2">{sel.description}</p>}
-          {sel.media_url && (
-            <div className="mt-3">
-              {sel.media_url.match(/\.(mp4|mov|webm)$/i) ? (
-                <video src={sel.media_url} className="w-full max-h-48 object-contain rounded-lg border border-otai-border" controls />
-              ) : (
-                <img src={sel.media_url} alt="Post media" className="w-full max-h-48 object-contain rounded-lg border border-otai-border" />
-              )}
-            </div>
-          )}
+          {(() => {
+            const urls = (sel.media_urls && sel.media_urls.length > 0) ? sel.media_urls : sel.media_url ? [sel.media_url] : [];
+            if (urls.length === 0) return null;
+            if (urls.length === 1) {
+              return (
+                <div className="mt-3">
+                  {urls[0].match(/\.(mp4|mov|webm)$/i) ? (
+                    <video src={urls[0]} className="w-full max-h-48 object-contain rounded-lg border border-otai-border" controls />
+                  ) : (
+                    <img src={urls[0]} alt="Post media" className="w-full max-h-48 object-contain rounded-lg border border-otai-border" />
+                  )}
+                </div>
+              );
+            }
+            return (
+              <div className="mt-3 grid grid-cols-3 gap-1.5">
+                {urls.map((src, i) => (
+                  <div key={i} className="relative">
+                    {src.match(/\.(mp4|mov|webm)$/i) ? (
+                      <video src={src} className="w-full h-20 object-cover rounded-lg border border-otai-border" />
+                    ) : (
+                      <img src={src} alt="" className="w-full h-20 object-cover rounded-lg border border-otai-border" />
+                    )}
+                    {i === 0 && <span className="absolute bottom-0.5 left-0.5 text-[9px] bg-black/70 text-white px-1 rounded">1/{urls.length}</span>}
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
           <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-medium mt-2 ${sel.status==="posted"?"bg-otai-green/20 text-otai-green":"bg-otai-purple/20 text-otai-purple"}`}>{sel.status==="posted"?"Posted":"Planned"}</span>
         </div>
       )}
