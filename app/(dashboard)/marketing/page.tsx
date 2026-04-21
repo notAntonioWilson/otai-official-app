@@ -145,8 +145,8 @@ export default function MarketingCalendar() {
 
     const action = editingPost ? "update_post" : "add_post";
     const payload = editingPost
-      ? { action, id: editingPost.id, client_id: form.client_id, platform: form.platform, post_type: form.post_type.toLowerCase(), scheduled_date: form.scheduled_date, description: form.description || null, media_url: finalUrls[0] || null, media_urls: finalUrls }
-      : { action, client_id: form.client_id, platform: form.platform, post_type: form.post_type.toLowerCase(), scheduled_date: form.scheduled_date, description: form.description || null, media_url: finalUrls[0] || null, media_urls: finalUrls };
+      ? { action, id: editingPost.id, client_id: form.client_id === "otai" ? null : form.client_id, platform: form.platform, post_type: form.post_type.toLowerCase(), scheduled_date: form.scheduled_date, description: form.description || null, media_url: finalUrls[0] || null, media_urls: finalUrls }
+      : { action, client_id: form.client_id === "otai" ? null : form.client_id, platform: form.platform, post_type: form.post_type.toLowerCase(), scheduled_date: form.scheduled_date, description: form.description || null, media_url: finalUrls[0] || null, media_urls: finalUrls };
     try {
       const res = await fetch("/api/marketing", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const result = await res.json();
@@ -198,7 +198,7 @@ export default function MarketingCalendar() {
               <div className="flex-1 p-1.5 space-y-1 overflow-y-auto">
                 {dayPosts.map((post) => {
                   const plat = getPlatformStyle(post.platform);
-                  const name = clientMap[post.client_id] || "—";
+                  const name = clientMap[post.client_id] || (post.client_id === null ? "OTAI" : "—");
                   return (
                     <div key={post.id} className={`group relative px-2 py-1.5 rounded-lg border text-[10px] cursor-pointer ${plat.color}`} onClick={() => openEdit(post)}>
                       <div className="flex items-center gap-1">

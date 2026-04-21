@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
       const { data } = await supabase.from("marketing_calendar").select("*").in("client_id", clientIds).order("scheduled_date");
       posts = data || [];
     }
-    const { data: otaiPosts } = await supabase.from("marketing_calendar").select("*").eq("client_id", "otai").order("scheduled_date");
+    const { data: otaiPosts } = await supabase.from("marketing_calendar").select("*").is("client_id", null).order("scheduled_date");
     return NextResponse.json({ clients: clients || [], posts: [...(posts || []), ...(otaiPosts || [])], userId: user.id });
   }
 

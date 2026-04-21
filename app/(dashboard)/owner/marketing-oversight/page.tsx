@@ -68,7 +68,11 @@ export default function OwnerMarketingOversight() {
     try {
       const res = await fetch("/api/marketing-oversight");
       const data = await res.json();
-      const c: ClientOption[] = (data.clients || []).map((cl: Record<string, unknown>) => ({ id: cl.id as string, company_name: cl.company_name as string }));
+      // Only show clients that are assigned to a marketer
+      const assignedClientIds = new Set((data.assignments || []).map((a: Assignment) => a.client_id));
+      const c: ClientOption[] = (data.clients || [])
+        .filter((cl: Record<string, unknown>) => assignedClientIds.has(cl.id as string))
+        .map((cl: Record<string, unknown>) => ({ id: cl.id as string, company_name: cl.company_name as string }));
       setClients(c);
       const map: Record<string, string> = {};
       c.forEach((cl) => { map[cl.id] = cl.company_name; });
@@ -140,7 +144,7 @@ export default function OwnerMarketingOversight() {
     const payload = {
       action: editingPost ? "update_post" : "add_post",
       ...(editingPost ? { id: editingPost.id } : { marketer_id: marketers[0]?.id || null }),
-      client_id: form.client_id,
+      client_id: form.client_id === "otai" ? null : form.client_id,
       platform: form.platform,
       post_type: form.post_type.toLowerCase(),
       scheduled_date: form.scheduled_date,
@@ -240,7 +244,7 @@ export default function OwnerMarketingOversight() {
               <div className="flex-1 p-1.5 space-y-1 overflow-y-auto">
                 {dayPosts.map((post) => {
                   const plat = PLATFORMS[post.platform] || PLATFORMS.x;
-                  const firstName = (clientMap[post.client_id] || "—").split(" ")[0];
+                  const firstName = (clientMap[post.client_id] || (post.client_id === null ? "OTAI" : "—")).split(" ")[0];
                   const hasMedia = (post.media_urls && post.media_urls.length > 0) || post.media_url;
                   return (
                     <div key={post.id} className={`group relative px-2 py-1.5 rounded-lg border text-[10px] cursor-pointer ${plat.color}`} onClick={() => openEdit(post)}>
