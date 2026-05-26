@@ -553,7 +553,11 @@ export default function ServiceDetailPage() {
               <div className="w-11 h-11 rounded-xl bg-otai-green/15 flex items-center justify-center shrink-0"><UserPlus size={22} className="text-otai-green" /></div>
               <div>
                 <p className="text-xs text-otai-green/70 uppercase tracking-wide">Leads Generated via Social</p>
-                <p className="text-3xl font-bold text-otai-green leading-none mt-0.5">{Number(overview.leads).toLocaleString()}</p>
+                <p className="text-3xl font-bold text-otai-green leading-none mt-0.5">{(() => {
+                  const raw = overview.leads;
+                  const n = typeof raw === "number" ? raw : Number(String(raw).replace(/[^0-9.]/g, ""));
+                  return Number.isFinite(n) && String(raw).match(/^[0-9,]+$/) ? n.toLocaleString() : String(raw);
+                })()}</p>
               </div>
             </div>
             <p className="text-xs text-otai-text-muted mt-3">{overview.leads_note || "Potential clients who reached out through your social media channels."}</p>

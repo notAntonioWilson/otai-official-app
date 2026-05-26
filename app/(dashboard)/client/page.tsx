@@ -326,7 +326,11 @@ export default function ClientDashboard() {
                   <div className="w-10 h-10 rounded-xl bg-otai-green/15 flex items-center justify-center shrink-0"><UserPlus size={20} className="text-otai-green" /></div>
                   <div className="flex-1">
                     <p className="text-xs text-otai-green/70 uppercase tracking-wide">Leads Generated via Social</p>
-                    <p className="text-2xl font-bold text-otai-green leading-none mt-0.5">{Number(overview.leads).toLocaleString()}</p>
+                    <p className="text-2xl font-bold text-otai-green leading-none mt-0.5">{(() => {
+                      const raw = overview.leads;
+                      const n = typeof raw === "number" ? raw : Number(String(raw).replace(/[^0-9.]/g, ""));
+                      return Number.isFinite(n) && String(raw).match(/^[0-9,]+$/) ? n.toLocaleString() : String(raw);
+                    })()}</p>
                   </div>
                   <ChevronRight size={16} className="text-otai-text-muted group-hover:text-otai-green transition-colors" />
                 </div>
