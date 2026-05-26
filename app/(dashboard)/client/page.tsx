@@ -20,6 +20,69 @@ function getJson(blocks: { label: string; value: string }[], label: string) {
   try { return JSON.parse(b.value); } catch { return null; }
 }
 
+// ===================== COMPACT NUMBER FORMAT =====================
+function fmtCompact(n: number): string {
+  if (!isFinite(n)) return "0";
+  const abs = Math.abs(n);
+  if (abs >= 1_000_000) return (n / 1_000_000).toFixed(abs >= 10_000_000 ? 1 : 2).replace(/\.?0+$/, "") + "M";
+  if (abs >= 1_000) return (n / 1_000).toFixed(abs >= 100_000 ? 0 : 1).replace(/\.?0+$/, "") + "K";
+  return n.toLocaleString();
+}
+
+// ===================== MINI SEGMENT DONUT =====================
+interface Seg { value: number; color: string }
+function MiniDonut({ segments, size = 64, label }: { segments: Seg[]; size?: number; label: string }) {
+  const r = (size - 8) / 2;
+  const circ = 2 * Math.PI * r;
+  const total = segments.reduce((s, x) => s + (x.value > 0 ? x.value : 0), 0);
+  let acc = 0;
+  return (
+    <div className="flex flex-col items-center gap-1.5">
+      <svg width={size} height={size} className="shrink-0">
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="currentColor" className="text-otai-border" strokeWidth={6} />
+        {total > 0 && segments.map((seg, i) => {
+          if (seg.value <= 0) return null;
+          const dash = circ * (seg.value / total);
+          const offset = -acc; acc += dash;
+          return <circle key={i} cx={size/2} cy={size/2} r={r} fill="none" stroke={seg.color} strokeWidth={6}
+            strokeDasharray={`${dash} ${circ - dash}`} strokeDashoffset={offset} transform={`rotate(-90 ${size/2} ${size/2})`} />;
+        })}
+        <text x={size/2} y={size/2} textAnchor="middle" dominantBaseline="central" fill="#fff" fontSize={size * 0.22} fontWeight="bold">{fmtCompact(total)}</text>
+      </svg>
+      <span className="text-[10px] text-otai-text-muted">{label}</span>
+    </div>
+  );
+}
+
+// ===================== SPARKLINE AREA =====================
+function Spark({ data, color, w = 240, h = 48 }: { data: number[]; color: string; w?: number; h?: number }) {
+  if (!data || data.length < 2) return null;
+  const max = Math.max(...data, 1);
+  const min = Math.min(...data, 0);
+  const range = max - min || 1;
+  const pts = data.map((v, i) => `${(i / (data.length - 1)) * w},${h - ((v - min) / range) * (h - 4) - 2}`).join(" ");
+  const fill = `${pts} ${w},${h} 0,${h}`;
+  const gid = `sg-${color.replace("#", "")}`;
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full" preserveAspectRatio="none" style={{ height: h }}>
+      <defs><linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor={color} stopOpacity="0.35" /><stop offset="100%" stopColor={color} stopOpacity="0" />
+      </linearGradient></defs>
+      <polygon points={fill} fill={`url(#${gid})`} />
+      <polyline points={pts} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+const PC = { facebook: "#3B82F6", linkedin: "#2DD4BF", instagram: "#EC4899" };
+function segArr(b?: { facebook?: number; linkedin?: number; instagram?: number }): Seg[] {
+  return [
+    { value: b?.facebook || 0, color: PC.facebook },
+    { value: b?.linkedin || 0, color: PC.linkedin },
+    { value: b?.instagram || 0, color: PC.instagram },
+  ];
+}
+
 export default function ClientDashboard() {
   const [displayName, setDisplayName] = useState("");
   const [services, setServices] = useState<ServiceWithBlocks[]>([]);
@@ -129,12 +192,29 @@ export default function ClientDashboard() {
                   </div>
                   <ChevronRight size={16} className="text-otai-text-muted group-hover:text-otai-purple transition-colors" />
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
-                  <div><p className="text-[11px] text-otai-text-muted">Clicks</p><p className="text-lg font-bold text-blue-400">{gsc.clicks?.toLocaleString()}</p></div>
-                  <div><p className="text-[11px] text-otai-text-muted">Impressions</p><p className="text-lg font-bold text-purple-400">{gsc.impressions?.toLocaleString()}</p></div>
-                  <div><p className="text-[11px] text-otai-text-muted">CTR</p><p className="text-lg font-bold text-emerald-400">{gsc.ctr}</p></div>
-                  <div><p className="text-[11px] text-otai-text-muted">Avg Position</p><p className="text-lg font-bold text-orange-400">{gsc.position}</p></div>
+
+                <div className="flex flex-col lg:flex-row lg:items-center gap-5">
+                  {/* Trend graph */}
+                  {(gsc.trend || []).length > 1 && (
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-1 text-[11px] text-otai-text-muted">
+                        <TrendingUp size={12} className="text-otai-purple" /> Search Performance
+                      </div>
+                      <Spark data={gsc.trend} color="#7C3AED" w={320} h={56} />
+                      <div className="flex items-center justify-between text-[10px] text-otai-text-muted mt-1">
+                        <span>{gsc.trend_start || ""}</span><span>{gsc.trend_end || ""}</span>
+                      </div>
+                    </div>
+                  )}
+                  {/* Totals */}
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-3 lg:w-[260px] shrink-0">
+                    <div><p className="text-[11px] text-otai-text-muted">Clicks</p><p className="text-lg font-bold text-blue-400">{gsc.clicks?.toLocaleString()}</p></div>
+                    <div><p className="text-[11px] text-otai-text-muted">Impressions</p><p className="text-lg font-bold text-purple-400">{gsc.impressions?.toLocaleString()}</p></div>
+                    <div><p className="text-[11px] text-otai-text-muted">CTR</p><p className="text-lg font-bold text-emerald-400">{gsc.ctr}</p></div>
+                    <div><p className="text-[11px] text-otai-text-muted">Avg Position</p><p className="text-lg font-bold text-orange-400">{gsc.position}</p></div>
+                  </div>
                 </div>
+
                 {(pagespeed || gbp) && (
                   <div className="flex items-center gap-4 mt-4 pt-3 border-t border-otai-border/30">
                     {pagespeed?.mobile && (
@@ -150,7 +230,6 @@ export default function ClientDashboard() {
                       </div>
                     )}
                     {gbp && <span className="text-xs text-otai-green">{gbp.profile_strength}</span>}
-                    <span className="text-xs text-otai-text-muted ml-auto">646 users</span>
                   </div>
                 )}
               </a>
@@ -166,13 +245,41 @@ export default function ClientDashboard() {
                   </div>
                   <ChevronRight size={16} className="text-otai-text-muted group-hover:text-pink-400 transition-colors" />
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3 mb-4">
-                  <div><p className="text-[11px] text-otai-text-muted">Total Views</p><p className="text-lg font-bold text-white">{overview.total_views?.toLocaleString()}</p></div>
-                  <div><p className="text-[11px] text-otai-text-muted">Engagement</p><p className="text-lg font-bold text-white">{overview.total_engagement?.toLocaleString()}</p></div>
-                  <div><p className="text-[11px] text-otai-text-muted">Followers</p><p className="text-lg font-bold text-white">{overview.total_followers?.toLocaleString()}</p></div>
-                  <div><p className="text-[11px] text-otai-text-muted">Interactions</p><p className="text-lg font-bold text-white">{(overview.total_interactions ?? overview.total_engagement)?.toLocaleString()}</p></div>
-                </div>
-                <div className="flex items-center gap-3 pt-3 border-t border-otai-border/30">
+
+                {(() => {
+                  const vb = overview.views_breakdown, eb = overview.engagement_breakdown, fob = overview.followers_breakdown;
+                  const hasBreak = (vb || eb || fob);
+                  const intTotal = overview.total_interactions ?? overview.total_engagement;
+                  if (hasBreak) {
+                    return (
+                      <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
+                        {vb && <MiniDonut segments={segArr(vb)} label="Views" />}
+                        {eb && <MiniDonut segments={segArr(eb)} label="Engagement" />}
+                        {fob && <MiniDonut segments={segArr(fob)} label="Followers" />}
+                        <div className="flex flex-col items-center gap-1.5">
+                          <span className="text-2xl font-bold text-otai-purple leading-none h-16 flex items-center">{intTotal !== undefined ? fmtCompact(intTotal) : "—"}</span>
+                          <span className="text-[10px] text-otai-text-muted">Interactions</span>
+                        </div>
+                        <div className="flex items-center gap-3 ml-auto">
+                          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: PC.facebook }} /><span className="text-[10px] text-otai-text-muted">Facebook</span></span>
+                          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: PC.linkedin }} /><span className="text-[10px] text-otai-text-muted">LinkedIn</span></span>
+                          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: PC.instagram }} /><span className="text-[10px] text-otai-text-muted">Instagram</span></span>
+                        </div>
+                      </div>
+                    );
+                  }
+                  // Fallback: flat stats (pre-migration data)
+                  return (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
+                      <div><p className="text-[11px] text-otai-text-muted">Total Views</p><p className="text-lg font-bold text-white">{overview.total_views?.toLocaleString()}</p></div>
+                      <div><p className="text-[11px] text-otai-text-muted">Engagement</p><p className="text-lg font-bold text-white">{overview.total_engagement?.toLocaleString()}</p></div>
+                      <div><p className="text-[11px] text-otai-text-muted">Followers</p><p className="text-lg font-bold text-white">{overview.total_followers?.toLocaleString()}</p></div>
+                      <div><p className="text-[11px] text-otai-text-muted">Interactions</p><p className="text-lg font-bold text-otai-purple">{intTotal?.toLocaleString()}</p></div>
+                    </div>
+                  );
+                })()}
+
+                <div className="flex items-center gap-3 pt-3 mt-4 border-t border-otai-border/30">
                   {fb && <span className="text-xs text-blue-400">FB {(fb.views / 1000000).toFixed(1)}M views</span>}
                   {li && (() => {
                     const liFollowers = (li.personal?.followers ?? li.personal_followers ?? 0) + (li.business?.followers ?? li.business_followers ?? 0);

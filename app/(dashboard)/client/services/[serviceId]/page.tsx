@@ -468,6 +468,39 @@ export default function ServiceDetailPage() {
             </div>
           );
 
+          // Interactions tile: big purple number + stacked platform contribution bar.
+          const ib = overview.interactions_breakdown || overview.engagement_breakdown;
+          const hasIntBreak = ib && (ib.facebook || ib.linkedin || ib.instagram);
+          const intTotal = overview.total_interactions ?? overview.total_engagement;
+          const InteractionsTile = () => (
+            <div className="bg-gradient-to-br from-otai-purple/10 to-otai-purple/[0.03] border border-otai-purple/20 rounded-xl p-4 flex flex-col">
+              <div className="flex items-center gap-1 mb-2">
+                <p className="text-otai-text-secondary text-xs">Total Interactions</p>
+                <Tip text="Every like, comment, share, save, reaction and repost across all platforms combined." />
+              </div>
+              <p className="text-3xl font-bold text-otai-purple leading-none">{intTotal !== undefined ? fmtCompact(intTotal) : "—"}</p>
+              {hasIntBreak ? (
+                <>
+                  <div className="flex h-2.5 rounded-full overflow-hidden mt-4 bg-otai-border/40">
+                    {seg(ib).filter(s => s.value > 0).map((s) => (
+                      <div key={s.label} style={{ width: `${(s.value / Math.max(intTotal || 1, 1)) * 100}%`, backgroundColor: s.color }} />
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2.5">
+                    {seg(ib).filter(s => s.value > 0).map((s) => (
+                      <div key={s.label} className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: s.color }} />
+                        <span className="text-[10px] text-otai-text-muted">{s.label} {fmtCompact(s.value)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <p className="text-[11px] text-otai-text-muted mt-3">Across all connected platforms</p>
+              )}
+            </div>
+          );
+
           return (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               {hasViewsBreak
@@ -479,7 +512,7 @@ export default function ServiceDetailPage() {
               {hasFolBreak
                 ? <TileDonut title="Total Followers" tip="Combined follower count across all platforms, split by platform." breakdown={fob} />
                 : <StatCard label="Total Followers" value={overview.total_followers?.toLocaleString() || "—"} tip="Combined follower count across all platforms." />}
-              <StatCard label="Total Interactions" value={overview.total_interactions?.toLocaleString() || overview.total_engagement?.toLocaleString() || "—"} tip="Every like, comment, share, save, reaction and repost across all platforms combined." color="text-otai-purple" />
+              <InteractionsTile />
             </div>
           );
         })()}
