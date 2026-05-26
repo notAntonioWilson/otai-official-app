@@ -74,13 +74,14 @@ function Spark({ data, color, w = 240, h = 48 }: { data: number[]; color: string
   );
 }
 
-const PC = { facebook: "#3B82F6", linkedin: "#2DD4BF", instagram: "#EC4899", tiktok: "#F5F5F5" };
-function segArr(b?: { facebook?: number; linkedin?: number; instagram?: number; tiktok?: number }): Seg[] {
+const PC = { facebook: "#3B82F6", linkedin: "#2DD4BF", instagram: "#EC4899", tiktok: "#F5F5F5", youtube: "#EF4444" };
+function segArr(b?: { facebook?: number; linkedin?: number; instagram?: number; tiktok?: number; youtube?: number }): Seg[] {
   return [
     { value: b?.facebook || 0, color: PC.facebook },
     { value: b?.linkedin || 0, color: PC.linkedin },
     { value: b?.instagram || 0, color: PC.instagram },
     { value: b?.tiktok || 0, color: PC.tiktok },
+    { value: b?.youtube || 0, color: PC.youtube },
   ];
 }
 
@@ -127,6 +128,7 @@ export default function ClientDashboard() {
   const ig = social ? getJson(social.blocks, "instagram_data") : null;
   const li = social ? getJson(social.blocks, "linkedin_data") : null;
   const tt = social ? getJson(social.blocks, "tiktok_data") : null;
+  const yt = social ? getJson(social.blocks, "youtube_data") : null;
   const chatbotData = chatbot ? getJson(chatbot.blocks, "chatbot_data") : null;
   const hasData = gsc || overview || chatbotData;
 
@@ -262,11 +264,12 @@ export default function ClientDashboard() {
                           <span className="text-2xl font-bold text-otai-purple leading-none h-16 flex items-center">{intTotal !== undefined ? fmtCompact(intTotal) : "—"}</span>
                           <span className="text-[10px] text-otai-text-muted">Interactions</span>
                         </div>
-                        <div className="flex items-center gap-3 ml-auto">
-                          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: PC.facebook }} /><span className="text-[10px] text-otai-text-muted">Facebook</span></span>
-                          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: PC.linkedin }} /><span className="text-[10px] text-otai-text-muted">LinkedIn</span></span>
-                          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: PC.instagram }} /><span className="text-[10px] text-otai-text-muted">Instagram</span></span>
+                        <div className="flex items-center gap-3 ml-auto flex-wrap">
+                          {(vb?.facebook || eb?.facebook || fob?.facebook) ? <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: PC.facebook }} /><span className="text-[10px] text-otai-text-muted">Facebook</span></span> : null}
+                          {(vb?.linkedin || eb?.linkedin || fob?.linkedin) ? <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: PC.linkedin }} /><span className="text-[10px] text-otai-text-muted">LinkedIn</span></span> : null}
+                          {(vb?.instagram || eb?.instagram || fob?.instagram) ? <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: PC.instagram }} /><span className="text-[10px] text-otai-text-muted">Instagram</span></span> : null}
                           {(vb?.tiktok || eb?.tiktok || fob?.tiktok) ? <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full border border-otai-border" style={{ backgroundColor: PC.tiktok }} /><span className="text-[10px] text-otai-text-muted">TikTok</span></span> : null}
+                          {(vb?.youtube || eb?.youtube || fob?.youtube) ? <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: PC.youtube }} /><span className="text-[10px] text-otai-text-muted">YouTube</span></span> : null}
                         </div>
                       </div>
                     );
@@ -276,20 +279,21 @@ export default function ClientDashboard() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
                       <div><p className="text-[11px] text-otai-text-muted">Total Views</p><p className="text-lg font-bold text-white">{overview.total_views?.toLocaleString()}</p></div>
                       <div><p className="text-[11px] text-otai-text-muted">Engagement</p><p className="text-lg font-bold text-white">{overview.total_engagement?.toLocaleString()}</p></div>
-                      <div><p className="text-[11px] text-otai-text-muted">Followers</p><p className="text-lg font-bold text-white">{overview.total_followers?.toLocaleString()}</p></div>
+                      <div><p className="text-[11px] text-otai-text-muted">Followers</p><p className="text-lg font-bold text-white">{overview.total_followers?.toLocaleString()}{overview.followers_gained !== undefined && overview.followers_gained !== null ? <span className="text-otai-green text-xs font-semibold ml-1.5">+{Number(overview.followers_gained).toLocaleString()}</span> : null}</p></div>
                       <div><p className="text-[11px] text-otai-text-muted">Interactions</p><p className="text-lg font-bold text-otai-purple">{intTotal?.toLocaleString()}</p></div>
                     </div>
                   );
                 })()}
 
-                <div className="flex items-center gap-3 pt-3 mt-4 border-t border-otai-border/30">
-                  {fb && <span className="text-xs text-blue-400">FB {(fb.views / 1000000).toFixed(1)}M views</span>}
+                <div className="flex items-center gap-3 pt-3 mt-4 border-t border-otai-border/30 flex-wrap">
+                  {fb && fb.views !== undefined && <span className="text-xs text-blue-400">FB {fmtCompact(fb.views)} views</span>}
                   {li && (() => {
                     const liFollowers = (li.personal?.followers ?? li.personal_followers ?? 0) + (li.business?.followers ?? li.business_followers ?? 0);
                     return liFollowers > 0 ? <span className="text-xs text-teal-400">LI {liFollowers.toLocaleString()} followers</span> : null;
                   })()}
                   {ig && <span className="text-xs text-pink-400">IG {ig.followers?.toLocaleString()} followers <span className="text-otai-green">{ig.followers_change}</span></span>}
                   {tt && (tt.views !== undefined || tt.followers !== undefined) && <span className="text-xs text-white">TT {tt.followers !== undefined ? `${tt.followers?.toLocaleString()} followers` : `${tt.views?.toLocaleString()} views`}</span>}
+                  {yt && (yt.subscribers !== undefined || yt.views !== undefined) && <span className="text-xs text-red-500">YT {yt.subscribers !== undefined ? `${yt.subscribers?.toLocaleString()} subs` : `${fmtCompact(yt.views)} views`}</span>}
                 </div>
               </a>
             )}

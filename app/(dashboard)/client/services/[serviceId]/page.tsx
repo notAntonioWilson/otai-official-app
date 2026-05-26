@@ -7,7 +7,7 @@ import type { ClientService, ServiceDataBlock, Automation } from "@/types";
 import {
   ExternalLink, ChevronLeft, ChevronRight, Calendar, Info,
   Globe, Smartphone, Monitor, TrendingUp, Users, MessageSquare,
-  ThumbsUp, Share2, Eye, UserPlus, BarChart3,
+  ThumbsUp, Share2, Eye, UserPlus, BarChart3, Youtube, Clock,
 } from "lucide-react";
 
 const SERVICE_NAMES: Record<string, string> = {
@@ -433,24 +433,25 @@ export default function ServiceDetailPage() {
 
         {/* Overall Dashboard */}
         {(() => {
-          // Platform colors: Facebook blue, LinkedIn teal, Instagram pink, TikTok white
-          const C = { facebook: "#3B82F6", linkedin: "#2DD4BF", instagram: "#EC4899", tiktok: "#F5F5F5" };
+          // Platform colors: Facebook blue, LinkedIn teal, Instagram pink, TikTok white, YouTube red
+          const C = { facebook: "#3B82F6", linkedin: "#2DD4BF", instagram: "#EC4899", tiktok: "#F5F5F5", youtube: "#EF4444" };
           // Breakdown objects are optional; fall back to total-only display when absent.
           const vb = overview.views_breakdown;
           const eb = overview.engagement_breakdown;
           const fob = overview.followers_breakdown;
-          const hasViewsBreak = vb && (vb.facebook || vb.linkedin || vb.instagram || vb.tiktok);
-          const hasEngBreak = eb && (eb.facebook || eb.linkedin || eb.instagram || eb.tiktok);
-          const hasFolBreak = fob && (fob.facebook || fob.linkedin || fob.instagram || fob.tiktok);
+          const hasViewsBreak = vb && (vb.facebook || vb.linkedin || vb.instagram || vb.tiktok || vb.youtube);
+          const hasEngBreak = eb && (eb.facebook || eb.linkedin || eb.instagram || eb.tiktok || eb.youtube);
+          const hasFolBreak = fob && (fob.facebook || fob.linkedin || fob.instagram || fob.tiktok || fob.youtube);
 
-          const seg = (b: { facebook?: number; linkedin?: number; instagram?: number; tiktok?: number }): DonutSeg[] => ([
+          const seg = (b: { facebook?: number; linkedin?: number; instagram?: number; tiktok?: number; youtube?: number }): DonutSeg[] => ([
             { label: "Facebook", value: b.facebook || 0, color: C.facebook },
             { label: "LinkedIn", value: b.linkedin || 0, color: C.linkedin },
             { label: "Instagram", value: b.instagram || 0, color: C.instagram },
             { label: "TikTok", value: b.tiktok || 0, color: C.tiktok },
+            { label: "YouTube", value: b.youtube || 0, color: C.youtube },
           ]);
 
-          const TileDonut = ({ title, tip, breakdown }: { title: string; tip: string; breakdown: { facebook?: number; linkedin?: number; instagram?: number } }) => (
+          const TileDonut = ({ title, tip, breakdown }: { title: string; tip: string; breakdown: { facebook?: number; linkedin?: number; instagram?: number; tiktok?: number; youtube?: number } }) => (
             <div className="bg-otai-dark border border-otai-border rounded-xl p-4">
               <div className="flex items-center gap-1 mb-2">
                 <p className="text-otai-text-secondary text-xs">{title}</p><Tip text={tip} />
@@ -472,7 +473,7 @@ export default function ServiceDetailPage() {
 
           // Interactions tile: big purple number + stacked platform contribution bar.
           const ib = overview.interactions_breakdown || overview.engagement_breakdown;
-          const hasIntBreak = ib && (ib.facebook || ib.linkedin || ib.instagram);
+          const hasIntBreak = ib && (ib.facebook || ib.linkedin || ib.instagram || ib.tiktok || ib.youtube);
           const intTotal = overview.total_interactions ?? overview.total_engagement;
           const InteractionsTile = () => (
             <div className="bg-gradient-to-br from-otai-purple/10 to-otai-purple/[0.03] border border-otai-purple/20 rounded-xl p-4 flex flex-col">
@@ -512,8 +513,34 @@ export default function ServiceDetailPage() {
                 ? <TileDonut title="Total Engagement" tip="Total reactions, comments, shares and saves across all platforms, split by platform." breakdown={eb} />
                 : <StatCard label="Total Engagement" value={overview.total_engagement?.toLocaleString() || "—"} tip="Total likes, comments, shares and reactions across all platforms." />}
               {hasFolBreak
-                ? <TileDonut title="Total Followers" tip="Combined follower count across all platforms, split by platform." breakdown={fob} />
-                : <StatCard label="Total Followers" value={overview.total_followers?.toLocaleString() || "—"} tip="Combined follower count across all platforms." />}
+                ? (
+                  <div className="bg-otai-dark border border-otai-border rounded-xl p-4">
+                    <div className="flex items-center gap-1 mb-2">
+                      <p className="text-otai-text-secondary text-xs">Total Followers</p>
+                      <Tip text="Combined follower count across all platforms, split by platform." />
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <SegmentDonut segments={seg(fob)} size={88} />
+                      <div className="space-y-1 min-w-0">
+                        {seg(fob).filter(s => s.value > 0).map((s) => (
+                          <div key={s.label} className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+                            <span className="text-[10px] text-otai-text-muted">{s.label}</span>
+                            <span className="text-[10px] text-white font-medium ml-auto">{fmtCompact(s.value)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {overview.followers_gained !== undefined && overview.followers_gained !== null && (
+                      <div className="mt-3 pt-3 border-t border-otai-border/60 flex items-center gap-1.5">
+                        <TrendingUp size={13} className="text-otai-green shrink-0" />
+                        <span className="text-otai-green text-xs font-semibold">+{Number(overview.followers_gained).toLocaleString()}</span>
+                        <span className="text-[10px] text-otai-text-muted">{overview.followers_gained_note || "new followers this period"}</span>
+                      </div>
+                    )}
+                  </div>
+                )
+                : <StatCard label="Total Followers" value={overview.total_followers?.toLocaleString() || "—"} sub={overview.followers_gained !== undefined && overview.followers_gained !== null ? `+${Number(overview.followers_gained).toLocaleString()} this period` : ""} tip="Combined follower count across all platforms." />}
               <InteractionsTile />
             </div>
           );
@@ -715,15 +742,15 @@ export default function ServiceDetailPage() {
           );
         })()}
 
-        {/* ---- INSTAGRAM (Last 90 Days) ---- */}
+        {/* ---- INSTAGRAM ---- */}
         {ig.followers !== undefined && (
           <>
-            <SectionTitle icon={Eye} title="Instagram — Last 90 Days" color="text-pink-400" />
+            <SectionTitle icon={Eye} title={`Instagram — ${ig.window_label || "Last 90 Days"}`} color="text-pink-400" />
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               <StatCard label="Followers" value={ig.followers?.toLocaleString()} sub={ig.followers_change || ""} color="text-pink-400" tip="Current Instagram follower count." />
-              <StatCard label="Views" value={ig.views_90d?.toLocaleString() || "0"} color="text-pink-400" tip="Total views in the last 90 days." />
-              <StatCard label="Interactions" value={ig.interactions_90d?.toLocaleString() || "0"} color="text-pink-400" tip="Total interactions in the last 90 days." />
-              <StatCard label="Accounts Reached" value={ig.accounts_reached?.toLocaleString() || "0"} sub={ig.accounts_reached_change || ""} color="text-pink-400" tip="Unique accounts that saw this content in the last 90 days." />
+              <StatCard label="Views" value={ig.views_90d?.toLocaleString() || "0"} color="text-pink-400" tip={`Total views in the ${(ig.window_label || "last 90 days").toLowerCase()}.`} />
+              <StatCard label="Interactions" value={ig.interactions_90d?.toLocaleString() || "0"} color="text-pink-400" tip={`Total interactions in the ${(ig.window_label || "last 90 days").toLowerCase()}.`} />
+              <StatCard label="Accounts Reached" value={ig.accounts_reached?.toLocaleString() || "0"} sub={ig.accounts_reached_change || ""} color="text-pink-400" tip={`Unique accounts that saw this content in the ${(ig.window_label || "last 90 days").toLowerCase()}.`} />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div className="bg-otai-dark border border-otai-border rounded-xl p-4">
@@ -785,6 +812,48 @@ export default function ServiceDetailPage() {
             )}
           </>
         )}
+
+        {/* ---- YOUTUBE ---- */}
+        {(() => {
+          const yt = getJson("youtube_data") || {};
+          if (yt.views === undefined && yt.subscribers === undefined && yt.watch_time === undefined) return null;
+          return (
+            <>
+              <SectionTitle icon={Youtube} title={`YouTube${yt.window_label ? ` — ${yt.window_label}` : ""}`} color="text-red-500" />
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                {yt.views !== undefined && <StatCard label="Views" value={yt.views?.toLocaleString()} sub={yt.views_change || ""} color="text-red-500" tip="Total video views in this period." />}
+                {yt.watch_time !== undefined && <StatCard label="Watch Time (hrs)" value={yt.watch_time?.toLocaleString()} sub={yt.watch_time_change || ""} color="text-red-500" tip="Total hours your videos were watched." />}
+                {yt.subscribers !== undefined && <StatCard label="Subscribers" value={yt.subscribers?.toLocaleString()} sub={yt.subscribers_gained !== undefined ? `+${Number(yt.subscribers_gained).toLocaleString()} this period` : ""} color="text-red-500" tip="Total subscriber count, with new subscribers gained this period." />}
+                {yt.engaged_views !== undefined && <StatCard label="Engaged Views" value={yt.engaged_views?.toLocaleString()} color="text-red-500" tip="Views where the viewer actively engaged with the video." />}
+              </div>
+              {(yt.likes !== undefined || yt.watch_time !== undefined || yt.engaged_views !== undefined) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div className="bg-otai-dark border border-otai-border rounded-xl p-4">
+                    <p className="text-xs text-otai-text-muted mb-2">Engagement Breakdown</p>
+                    <div className="flex items-center gap-5 mt-2">
+                      {yt.likes !== undefined && <div className="text-center"><ThumbsUp size={14} className="text-red-500 mx-auto" /><p className="text-white text-sm font-medium mt-1">{yt.likes?.toLocaleString()}</p><p className="text-[10px] text-otai-text-muted">Likes</p></div>}
+                      {yt.engaged_views !== undefined && <div className="text-center"><Eye size={14} className="text-red-500 mx-auto" /><p className="text-white text-sm font-medium mt-1">{fmtCompact(yt.engaged_views)}</p><p className="text-[10px] text-otai-text-muted">Engaged Views</p></div>}
+                      {yt.watch_time !== undefined && <div className="text-center"><Clock size={14} className="text-red-500 mx-auto" /><p className="text-white text-sm font-medium mt-1">{yt.watch_time?.toLocaleString()}h</p><p className="text-[10px] text-otai-text-muted">Watch Time</p></div>}
+                    </div>
+                  </div>
+                  {(yt.top_content || []).length > 0 && (
+                    <div className="bg-otai-dark border border-otai-border rounded-xl p-4">
+                      <p className="text-xs text-otai-text-muted mb-2">Top Content</p>
+                      <div className="space-y-1.5">
+                        {yt.top_content.slice(0, 4).map((c: { title: string; views: string }, i: number) => (
+                          <div key={i} className="flex items-center gap-3">
+                            <span className="text-sm text-white flex-1 truncate">{c.title}</span>
+                            <span className="text-sm font-semibold text-white">{c.views}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          );
+        })()}
 
         {/* Content Calendar already shown above */}
       </div>
