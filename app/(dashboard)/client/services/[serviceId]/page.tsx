@@ -68,8 +68,9 @@ function Donut({ value, max, color, size = 80 }: { value: number; max: number; c
 function fmtCompact(n: number): string {
   if (!isFinite(n)) return "0";
   const abs = Math.abs(n);
-  if (abs >= 1_000_000) return (n / 1_000_000).toFixed(abs >= 10_000_000 ? 1 : 2).replace(/\.?0+$/, "") + "M";
-  if (abs >= 1_000) return (n / 1_000).toFixed(abs >= 100_000 ? 0 : 1).replace(/\.?0+$/, "") + "K";
+  const stripZeros = (s: string) => s.replace(/\.0+$/, "").replace(/(\.\d*?)0+$/, "$1");
+  if (abs >= 1_000_000) return stripZeros((n / 1_000_000).toFixed(abs >= 10_000_000 ? 1 : 2)) + "M";
+  if (abs >= 1_000) return stripZeros((n / 1_000).toFixed(abs >= 100_000 ? 0 : 1)) + "K";
   return n.toLocaleString();
 }
 
