@@ -94,7 +94,7 @@ export default function ClientDashboard() {
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-xl bg-otai-green/15 flex items-center justify-center"><DollarSign size={20} className="text-otai-green" /></div>
                 <div>
-                  <p className="text-xs text-otai-green/70 uppercase tracking-wide">Revenue Generated</p>
+                  <p className="text-xs text-otai-green/70 uppercase tracking-wide">Potential Revenue Generated</p>
                   <p className="text-3xl font-bold text-otai-green">{impact.revenue}</p>
                 </div>
               </div>
@@ -170,11 +170,14 @@ export default function ClientDashboard() {
                   <div><p className="text-[11px] text-otai-text-muted">Total Views</p><p className="text-lg font-bold text-white">{overview.total_views?.toLocaleString()}</p></div>
                   <div><p className="text-[11px] text-otai-text-muted">Engagement</p><p className="text-lg font-bold text-white">{overview.total_engagement?.toLocaleString()}</p></div>
                   <div><p className="text-[11px] text-otai-text-muted">Followers</p><p className="text-lg font-bold text-white">{overview.total_followers?.toLocaleString()}</p></div>
-                  <div><p className="text-[11px] text-otai-text-muted">Posts</p><p className="text-lg font-bold text-white">{overview.total_posts?.toLocaleString()}</p></div>
+                  <div><p className="text-[11px] text-otai-text-muted">Interactions</p><p className="text-lg font-bold text-white">{(overview.total_interactions ?? overview.total_engagement)?.toLocaleString()}</p></div>
                 </div>
                 <div className="flex items-center gap-3 pt-3 border-t border-otai-border/30">
                   {fb && <span className="text-xs text-blue-400">FB {(fb.views / 1000000).toFixed(1)}M views</span>}
-                  {li && <span className="text-xs text-sky-400">LI {((li.business_followers || 0) + (li.personal_followers || 0)).toLocaleString()} followers</span>}
+                  {li && (() => {
+                    const liFollowers = (li.personal?.followers ?? li.personal_followers ?? 0) + (li.business?.followers ?? li.business_followers ?? 0);
+                    return liFollowers > 0 ? <span className="text-xs text-teal-400">LI {liFollowers.toLocaleString()} followers</span> : null;
+                  })()}
                   {ig && <span className="text-xs text-pink-400">IG {ig.followers?.toLocaleString()} followers <span className="text-otai-green">{ig.followers_change}</span></span>}
                 </div>
               </a>

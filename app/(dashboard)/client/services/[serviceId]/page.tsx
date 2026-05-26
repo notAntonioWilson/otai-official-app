@@ -64,6 +64,43 @@ function Donut({ value, max, color, size = 80 }: { value: number; max: number; c
   );
 }
 
+// ===================== COMPACT NUMBER FORMAT =====================
+function fmtCompact(n: number): string {
+  if (!isFinite(n)) return "0";
+  const abs = Math.abs(n);
+  if (abs >= 1_000_000) return (n / 1_000_000).toFixed(abs >= 10_000_000 ? 1 : 2).replace(/\.?0+$/, "") + "M";
+  if (abs >= 1_000) return (n / 1_000).toFixed(abs >= 100_000 ? 0 : 1).replace(/\.?0+$/, "") + "K";
+  return n.toLocaleString();
+}
+
+// ===================== SEGMENT DONUT (multi-platform split) =====================
+interface DonutSeg { label: string; value: number; color: string }
+function SegmentDonut({ segments, size = 96 }: { segments: DonutSeg[]; size?: number }) {
+  const r = (size - 10) / 2;
+  const circ = 2 * Math.PI * r;
+  const total = segments.reduce((s, seg) => s + (seg.value > 0 ? seg.value : 0), 0);
+  let acc = 0;
+  return (
+    <svg width={size} height={size} className="shrink-0">
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="currentColor" className="text-otai-border" strokeWidth={7} />
+      {total > 0 && segments.map((seg, i) => {
+        if (seg.value <= 0) return null;
+        const frac = seg.value / total;
+        const dash = circ * frac;
+        const gap = circ - dash;
+        const offset = -acc;
+        acc += dash;
+        return (
+          <circle key={i} cx={size/2} cy={size/2} r={r} fill="none" stroke={seg.color} strokeWidth={7}
+            strokeDasharray={`${dash} ${gap}`} strokeDashoffset={offset}
+            transform={`rotate(-90 ${size/2} ${size/2})`} />
+        );
+      })}
+      <text x={size/2} y={size/2} textAnchor="middle" dominantBaseline="central" fill="#fff" fontSize={size * 0.2} fontWeight="bold">{fmtCompact(total)}</text>
+    </svg>
+  );
+}
+
 // ===================== BAR =====================
 function Bar({ pct, color }: { pct: number; color: string }) {
   return (
@@ -288,7 +325,6 @@ export default function ServiceDetailPage() {
                 <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-otai-green/15 text-otai-green border border-otai-green/30">{gbp.profile_strength}</span>
               </div>
               <div className="text-sm text-otai-text-secondary"><span className="text-white font-medium">{gbp.interactions || 0}</span> customer interactions</div>
-              <div className="text-sm text-otai-text-secondary"><span className="text-white font-medium">{gbp.posts || 0}</span> posts published</div>
             </div>
           </div>
         )}
@@ -395,12 +431,58 @@ export default function ServiceDetailPage() {
         <h1 className="text-2xl font-bold text-white mb-6">{title}</h1>
 
         {/* Overall Dashboard */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <StatCard label="Total Views" value={overview.total_views?.toLocaleString() || "—"} tip="Combined views across all social media platforms." />
-          <StatCard label="Total Engagement" value={overview.total_engagement?.toLocaleString() || "—"} tip="Total likes, comments, shares and reactions across all platforms." />
-          <StatCard label="Total Followers" value={overview.total_followers?.toLocaleString() || "—"} tip="Combined follower count across all platforms." />
-          <StatCard label="Total Posts" value={overview.total_posts?.toLocaleString() || "—"} tip="Number of posts published across all platforms." />
-        </div>
+        {(() => {
+          // Platform colors: Facebook blue, LinkedIn teal, Instagram pink
+          const C = { facebook: "#3B82F6", linkedin: "#2DD4BF", instagram: "#EC4899" };
+          // Breakdown objects are optional; fall back to total-only display when absent.
+          const vb = overview.views_breakdown;
+          const eb = overview.engagement_breakdown;
+          const fob = overview.followers_breakdown;
+          const hasViewsBreak = vb && (vb.facebook || vb.linkedin || vb.instagram);
+          const hasEngBreak = eb && (eb.facebook || eb.linkedin || eb.instagram);
+          const hasFolBreak = fob && (fob.facebook || fob.linkedin || fob.instagram);
+
+          const seg = (b: { facebook?: number; linkedin?: number; instagram?: number }): DonutSeg[] => ([
+            { label: "Facebook", value: b.facebook || 0, color: C.facebook },
+            { label: "LinkedIn", value: b.linkedin || 0, color: C.linkedin },
+            { label: "Instagram", value: b.instagram || 0, color: C.instagram },
+          ]);
+
+          const TileDonut = ({ title, tip, breakdown }: { title: string; tip: string; breakdown: { facebook?: number; linkedin?: number; instagram?: number } }) => (
+            <div className="bg-otai-dark border border-otai-border rounded-xl p-4">
+              <div className="flex items-center gap-1 mb-2">
+                <p className="text-otai-text-secondary text-xs">{title}</p><Tip text={tip} />
+              </div>
+              <div className="flex items-center gap-3">
+                <SegmentDonut segments={seg(breakdown)} size={88} />
+                <div className="space-y-1 min-w-0">
+                  {seg(breakdown).filter(s => s.value > 0).map((s) => (
+                    <div key={s.label} className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+                      <span className="text-[10px] text-otai-text-muted">{s.label}</span>
+                      <span className="text-[10px] text-white font-medium ml-auto">{fmtCompact(s.value)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+
+          return (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              {hasViewsBreak
+                ? <TileDonut title="Total Views" tip="Combined views across all social media platforms, split by platform." breakdown={vb} />
+                : <StatCard label="Total Views" value={overview.total_views?.toLocaleString() || "—"} tip="Combined views across all social media platforms." />}
+              {hasEngBreak
+                ? <TileDonut title="Total Engagement" tip="Total reactions, comments, shares and saves across all platforms, split by platform." breakdown={eb} />
+                : <StatCard label="Total Engagement" value={overview.total_engagement?.toLocaleString() || "—"} tip="Total likes, comments, shares and reactions across all platforms." />}
+              {hasFolBreak
+                ? <TileDonut title="Total Followers" tip="Combined follower count across all platforms, split by platform." breakdown={fob} />
+                : <StatCard label="Total Followers" value={overview.total_followers?.toLocaleString() || "—"} tip="Combined follower count across all platforms." />}
+              <StatCard label="Total Interactions" value={overview.total_interactions?.toLocaleString() || overview.total_engagement?.toLocaleString() || "—"} tip="Every like, comment, share, save, reaction and repost across all platforms combined." color="text-otai-purple" />
+            </div>
+          );
+        })()}
 
         {/* Content Calendar */}
         <ContentCalendar posts={calendarPosts} />
@@ -485,23 +567,104 @@ export default function ServiceDetailPage() {
         )}
 
         {/* ---- LINKEDIN ---- */}
-        {(li.business_followers !== undefined || li.personal_followers !== undefined) && (
-          <>
-            <SectionTitle icon={Users} title="LinkedIn" color="text-sky-400" />
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-              {li.business_followers !== undefined && <StatCard label="Business Followers" value={li.business_followers?.toLocaleString()} color="text-sky-400" />}
-              {li.personal_followers !== undefined && <StatCard label="Personal Followers" value={li.personal_followers?.toLocaleString()} color="text-sky-400" />}
-              {li.impressions !== undefined && <StatCard label="Impressions" value={li.impressions?.toLocaleString()} color="text-sky-400" tip="How many times your content was shown on LinkedIn." />}
-              {li.reactions !== undefined && <StatCard label="Reactions" value={li.reactions?.toLocaleString()} color="text-sky-400" />}
+        {(() => {
+          const LI = "text-teal-400";
+          // New nested structure: li.personal / li.business. Backward-compatible with old flat fields.
+          const personal = li.personal || (
+            (li.personal_followers !== undefined || li.post_impressions_personal !== undefined || li.profile_viewers_personal !== undefined)
+              ? {
+                  followers: li.personal_followers,
+                  impressions: li.post_impressions_personal ?? li.impressions,
+                  profile_viewers: li.profile_viewers_personal,
+                  reactions: li.reactions, comments: li.comments, reposts: li.reposts,
+                }
+              : null
+          );
+          const business = li.business || (
+            li.business_followers !== undefined
+              ? { followers: li.business_followers, impressions: li.impressions, reactions: li.reactions, comments: li.comments, reposts: li.reposts }
+              : null
+          );
+          if (!personal && !business) return null;
+
+          const EngStat = ({ label, val }: { label: string; val?: number }) =>
+            val === undefined || val === null ? null : (
+              <div className="text-center"><p className="text-white text-sm font-medium">{val.toLocaleString()}</p><p className="text-[10px] text-otai-text-muted">{label}</p></div>
+            );
+
+          const DemoRow = ({ category, value, pct }: { category: string; value: string; pct?: number }) => (
+            <div className="flex items-center justify-between gap-3 py-1.5 border-b border-otai-border/10 last:border-0">
+              <div className="min-w-0"><p className="text-[10px] text-otai-text-muted">{category}</p><p className="text-sm text-white truncate">{value}</p></div>
+              {pct !== undefined && <span className="text-sm text-teal-400 font-medium shrink-0">{pct}%</span>}
             </div>
-            {(li.comments !== undefined || li.reposts !== undefined) && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                {li.comments !== undefined && <StatCard label="Comments" value={li.comments?.toLocaleString()} color="text-sky-400" />}
-                {li.reposts !== undefined && <StatCard label="Reposts" value={li.reposts?.toLocaleString()} color="text-sky-400" />}
-              </div>
-            )}
-          </>
-        )}
+          );
+
+          return (
+            <>
+              <SectionTitle icon={Users} title="LinkedIn" color={LI} />
+
+              {/* Personal */}
+              {personal && (
+                <div className="mb-5">
+                  <p className="text-xs text-otai-text-muted uppercase tracking-wide mb-3">Personal Profile</p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    {personal.followers !== undefined && <StatCard label="Followers" value={Number(personal.followers).toLocaleString()} color={LI} tip="Total followers on the personal LinkedIn profile." />}
+                    {personal.impressions !== undefined && <StatCard label="Impressions" value={Number(personal.impressions).toLocaleString()} color={LI} tip="How many times personal posts were shown on LinkedIn." />}
+                    {personal.members_reached !== undefined && <StatCard label="Members Reached" value={Number(personal.members_reached).toLocaleString()} color={LI} tip="Unique LinkedIn members who saw the content." />}
+                    {personal.search_appearances !== undefined && <StatCard label="Search Appearances" value={Number(personal.search_appearances).toLocaleString()} color={LI} tip="How often the profile appeared in LinkedIn search." />}
+                    {personal.profile_viewers !== undefined && <StatCard label="Profile Viewers" value={Number(personal.profile_viewers).toLocaleString()} color={LI} />}
+                  </div>
+                  {(personal.engagement !== undefined || personal.reactions !== undefined) && (
+                    <div className="bg-otai-dark border border-otai-border rounded-xl p-4 mb-4">
+                      <p className="text-xs text-otai-text-muted mb-3">Engagement{personal.engagement !== undefined ? ` — ${Number(personal.engagement).toLocaleString()} total` : ""}</p>
+                      <div className="flex items-center gap-5 flex-wrap">
+                        <EngStat label="Reactions" val={personal.reactions} />
+                        <EngStat label="Comments" val={personal.comments} />
+                        <EngStat label="Reposts" val={personal.reposts} />
+                        <EngStat label="Saves" val={personal.saves} />
+                        <EngStat label="Sends" val={personal.sends} />
+                      </div>
+                    </div>
+                  )}
+                  {(personal.demographics || []).length > 0 && (
+                    <div className="bg-otai-dark border border-otai-border rounded-xl p-4 mb-4">
+                      <p className="text-xs text-otai-text-muted mb-1">Top Demographics</p>
+                      {personal.demographics.map((d: { category: string; value: string; pct?: number }, i: number) => (
+                        <DemoRow key={i} category={d.category} value={d.value} pct={d.pct} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Business */}
+              {business && (
+                <div className="mb-6">
+                  <p className="text-xs text-otai-text-muted uppercase tracking-wide mb-3">Business Page</p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    {business.followers !== undefined && <StatCard label="Followers" value={Number(business.followers).toLocaleString()} color={LI} tip="Total followers on the LinkedIn business page." />}
+                    {business.impressions !== undefined && <StatCard label="Impressions" value={Number(business.impressions).toLocaleString()} color={LI} tip="How many times business page content was shown." />}
+                    {business.reactions !== undefined && <StatCard label="Reactions" value={Number(business.reactions).toLocaleString()} color={LI} />}
+                    {business.comments !== undefined && <StatCard label="Comments" value={Number(business.comments).toLocaleString()} color={LI} />}
+                    {business.reposts !== undefined && <StatCard label="Reposts" value={Number(business.reposts).toLocaleString()} color={LI} />}
+                  </div>
+                  {(business.demographics || []).length > 0 && (
+                    <div className="bg-otai-dark border border-otai-border rounded-xl p-4">
+                      <p className="text-xs text-otai-text-muted mb-2">Top Follower Locations</p>
+                      {business.demographics.slice(0, 6).map((d: { value: string; pct?: number; count?: number }, i: number) => (
+                        <div key={i} className="flex items-center gap-3 mb-1.5">
+                          <span className="text-sm text-white w-48 shrink-0 truncate">{d.value}</span>
+                          <Bar pct={d.pct || 0} color="#2DD4BF" />
+                          <span className="text-xs text-otai-text-muted w-16 text-right">{d.count ? `${d.count} (${d.pct}%)` : `${d.pct}%`}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          );
+        })()}
 
         {/* ---- INSTAGRAM (Last 90 Days) ---- */}
         {ig.followers !== undefined && (
@@ -511,7 +674,7 @@ export default function ServiceDetailPage() {
               <StatCard label="Followers" value={ig.followers?.toLocaleString()} sub={ig.followers_change || ""} color="text-pink-400" tip="Current Instagram follower count." />
               <StatCard label="Views" value={ig.views_90d?.toLocaleString() || "0"} color="text-pink-400" tip="Total views in the last 90 days." />
               <StatCard label="Interactions" value={ig.interactions_90d?.toLocaleString() || "0"} color="text-pink-400" tip="Total interactions in the last 90 days." />
-              <StatCard label="Posts" value={ig.posts?.toLocaleString() || "0"} color="text-pink-400" />
+              <StatCard label="Accounts Reached" value={ig.accounts_reached?.toLocaleString() || "0"} sub={ig.accounts_reached_change || ""} color="text-pink-400" tip="Unique accounts that saw this content in the last 90 days." />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div className="bg-otai-dark border border-otai-border rounded-xl p-4">
