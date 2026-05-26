@@ -425,6 +425,7 @@ export default function ServiceDetailPage() {
     const fb = getJson("facebook_data") || {};
     const li = getJson("linkedin_data") || {};
     const ig = getJson("instagram_data") || {};
+    const tt = getJson("tiktok_data") || {};
 
     return (
       <div>
@@ -432,20 +433,21 @@ export default function ServiceDetailPage() {
 
         {/* Overall Dashboard */}
         {(() => {
-          // Platform colors: Facebook blue, LinkedIn teal, Instagram pink
-          const C = { facebook: "#3B82F6", linkedin: "#2DD4BF", instagram: "#EC4899" };
+          // Platform colors: Facebook blue, LinkedIn teal, Instagram pink, TikTok white
+          const C = { facebook: "#3B82F6", linkedin: "#2DD4BF", instagram: "#EC4899", tiktok: "#F5F5F5" };
           // Breakdown objects are optional; fall back to total-only display when absent.
           const vb = overview.views_breakdown;
           const eb = overview.engagement_breakdown;
           const fob = overview.followers_breakdown;
-          const hasViewsBreak = vb && (vb.facebook || vb.linkedin || vb.instagram);
-          const hasEngBreak = eb && (eb.facebook || eb.linkedin || eb.instagram);
-          const hasFolBreak = fob && (fob.facebook || fob.linkedin || fob.instagram);
+          const hasViewsBreak = vb && (vb.facebook || vb.linkedin || vb.instagram || vb.tiktok);
+          const hasEngBreak = eb && (eb.facebook || eb.linkedin || eb.instagram || eb.tiktok);
+          const hasFolBreak = fob && (fob.facebook || fob.linkedin || fob.instagram || fob.tiktok);
 
-          const seg = (b: { facebook?: number; linkedin?: number; instagram?: number }): DonutSeg[] => ([
+          const seg = (b: { facebook?: number; linkedin?: number; instagram?: number; tiktok?: number }): DonutSeg[] => ([
             { label: "Facebook", value: b.facebook || 0, color: C.facebook },
             { label: "LinkedIn", value: b.linkedin || 0, color: C.linkedin },
             { label: "Instagram", value: b.instagram || 0, color: C.instagram },
+            { label: "TikTok", value: b.tiktok || 0, color: C.tiktok },
           ]);
 
           const TileDonut = ({ title, tip, breakdown }: { title: string; tip: string; breakdown: { facebook?: number; linkedin?: number; instagram?: number } }) => (
@@ -743,6 +745,44 @@ export default function ServiceDetailPage() {
                 </div>
               </div>
             </div>
+          </>
+        )}
+
+        {/* ---- TIKTOK ---- */}
+        {(tt.views !== undefined || tt.followers !== undefined) && (
+          <>
+            <SectionTitle icon={Eye} title="TikTok" color="text-white" />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              {tt.views !== undefined && <StatCard label="Post Views" value={tt.views?.toLocaleString()} sub={tt.views_change || ""} color="text-white" tip="Total views across TikTok posts." />}
+              {tt.followers !== undefined && <StatCard label="Followers" value={tt.followers?.toLocaleString()} sub={tt.followers_change || ""} color="text-white" tip="Current TikTok follower count." />}
+              {tt.profile_views !== undefined && <StatCard label="Profile Views" value={tt.profile_views?.toLocaleString()} color="text-white" tip="How many times the TikTok profile was viewed." />}
+              {tt.likes !== undefined && <StatCard label="Likes" value={tt.likes?.toLocaleString()} color="text-white" />}
+            </div>
+            {(tt.likes !== undefined || tt.comments !== undefined || tt.shares !== undefined) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="bg-otai-dark border border-otai-border rounded-xl p-4">
+                  <p className="text-xs text-otai-text-muted mb-2">Engagement Breakdown</p>
+                  <div className="flex items-center gap-5 mt-2">
+                    {tt.likes !== undefined && <div className="text-center"><ThumbsUp size={14} className="text-white mx-auto" /><p className="text-white text-sm font-medium mt-1">{tt.likes?.toLocaleString()}</p><p className="text-[10px] text-otai-text-muted">Likes</p></div>}
+                    {tt.comments !== undefined && <div className="text-center"><MessageSquare size={14} className="text-white mx-auto" /><p className="text-white text-sm font-medium mt-1">{tt.comments?.toLocaleString()}</p><p className="text-[10px] text-otai-text-muted">Comments</p></div>}
+                    {tt.shares !== undefined && <div className="text-center"><Share2 size={14} className="text-white mx-auto" /><p className="text-white text-sm font-medium mt-1">{tt.shares?.toLocaleString()}</p><p className="text-[10px] text-otai-text-muted">Shares</p></div>}
+                  </div>
+                </div>
+                {(tt.top_content || []).length > 0 && (
+                  <div className="bg-otai-dark border border-otai-border rounded-xl p-4">
+                    <p className="text-xs text-otai-text-muted mb-2">Top Content</p>
+                    <div className="space-y-1.5">
+                      {tt.top_content.slice(0, 4).map((c: { title: string; views: string }, i: number) => (
+                        <div key={i} className="flex items-center gap-3">
+                          <span className="text-sm text-white flex-1 truncate">{c.title}</span>
+                          <span className="text-sm font-semibold text-white">{c.views}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
 

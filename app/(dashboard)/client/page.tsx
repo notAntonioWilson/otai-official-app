@@ -74,12 +74,13 @@ function Spark({ data, color, w = 240, h = 48 }: { data: number[]; color: string
   );
 }
 
-const PC = { facebook: "#3B82F6", linkedin: "#2DD4BF", instagram: "#EC4899" };
-function segArr(b?: { facebook?: number; linkedin?: number; instagram?: number }): Seg[] {
+const PC = { facebook: "#3B82F6", linkedin: "#2DD4BF", instagram: "#EC4899", tiktok: "#F5F5F5" };
+function segArr(b?: { facebook?: number; linkedin?: number; instagram?: number; tiktok?: number }): Seg[] {
   return [
     { value: b?.facebook || 0, color: PC.facebook },
     { value: b?.linkedin || 0, color: PC.linkedin },
     { value: b?.instagram || 0, color: PC.instagram },
+    { value: b?.tiktok || 0, color: PC.tiktok },
   ];
 }
 
@@ -125,6 +126,7 @@ export default function ClientDashboard() {
   const fb = social ? getJson(social.blocks, "facebook_data") : null;
   const ig = social ? getJson(social.blocks, "instagram_data") : null;
   const li = social ? getJson(social.blocks, "linkedin_data") : null;
+  const tt = social ? getJson(social.blocks, "tiktok_data") : null;
   const chatbotData = chatbot ? getJson(chatbot.blocks, "chatbot_data") : null;
   const hasData = gsc || overview || chatbotData;
 
@@ -264,6 +266,7 @@ export default function ClientDashboard() {
                           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: PC.facebook }} /><span className="text-[10px] text-otai-text-muted">Facebook</span></span>
                           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: PC.linkedin }} /><span className="text-[10px] text-otai-text-muted">LinkedIn</span></span>
                           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: PC.instagram }} /><span className="text-[10px] text-otai-text-muted">Instagram</span></span>
+                          {(vb?.tiktok || eb?.tiktok || fob?.tiktok) ? <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full border border-otai-border" style={{ backgroundColor: PC.tiktok }} /><span className="text-[10px] text-otai-text-muted">TikTok</span></span> : null}
                         </div>
                       </div>
                     );
@@ -286,6 +289,7 @@ export default function ClientDashboard() {
                     return liFollowers > 0 ? <span className="text-xs text-teal-400">LI {liFollowers.toLocaleString()} followers</span> : null;
                   })()}
                   {ig && <span className="text-xs text-pink-400">IG {ig.followers?.toLocaleString()} followers <span className="text-otai-green">{ig.followers_change}</span></span>}
+                  {tt && (tt.views !== undefined || tt.followers !== undefined) && <span className="text-xs text-white">TT {tt.followers !== undefined ? `${tt.followers?.toLocaleString()} followers` : `${tt.views?.toLocaleString()} views`}</span>}
                 </div>
               </a>
             )}
