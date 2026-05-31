@@ -133,13 +133,20 @@ export async function GET(req: NextRequest) {
   }
 
   // sort tasks within each group by platform order then slot; drop archived from view
+  // Fixed display order; any client not listed sorts to the end alphabetically.
+  const CLIENT_ORDER = ["Elite Paint", "Next Level Carpentry", "JAZ Home", "DG Ventures"];
+  const orderIdx = (name: string) => {
+    const i = CLIENT_ORDER.indexOf(name);
+    return i === -1 ? CLIENT_ORDER.length : i;
+  };
+
   const result = Object.values(groups).map((g) => ({
     ...g,
     tasks: g.tasks
       .filter((t) => !t.archived)
       .sort((a, b) => (PLATFORM_ORDER[a.platform] || 99) - (PLATFORM_ORDER[b.platform] || 99) || a.slot_number - b.slot_number),
   })).filter((g) => g.tasks.length > 0)
-    .sort((a, b) => a.company_name.localeCompare(b.company_name));
+    .sort((a, b) => orderIdx(a.company_name) - orderIdx(b.company_name) || a.company_name.localeCompare(b.company_name));
 
   return NextResponse.json({ date, groups: result });
 }
