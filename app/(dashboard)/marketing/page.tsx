@@ -5,6 +5,7 @@ import {
   Calendar, ChevronLeft, ChevronRight, Plus, X, Trash2,
   Loader2, Check, AlertCircle, ChevronDown,
 } from "lucide-react";
+import MarketingTaskList from "@/components/marketing/MarketingTaskList";
 
 interface CalendarPost {
   id: string;
@@ -168,7 +169,7 @@ export default function MarketingCalendar() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2"><Calendar size={24} className="text-otai-purple" /> Content Calendar</h1>
+          <h1 className="text-2xl font-bold text-white flex items-center gap-2"><Calendar size={24} className="text-otai-purple" /> Dashboard</h1>
           <p className="text-otai-text-secondary text-sm mt-1">Plan and schedule posts</p>
         </div>
         <button onClick={() => openAdd()} className="flex items-center gap-2 px-4 py-2.5 bg-otai-purple hover:bg-otai-purple-hover text-white rounded-lg text-sm font-medium transition-colors"><Plus size={16} /> Add Post</button>
@@ -216,6 +217,9 @@ export default function MarketingCalendar() {
           );
         })}
       </div>
+
+      <MarketingTaskList />
+
       {showModal && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80" onClick={() => setShowModal(false)} />

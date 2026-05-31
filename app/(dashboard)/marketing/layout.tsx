@@ -5,7 +5,7 @@ import { Calendar, Users, BookOpen } from "lucide-react";
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   const navItems = [
-    { name: "Calendar", href: "/marketing", icon: Calendar },
+    { name: "Dashboard", href: "/marketing", icon: Calendar },
     { name: "Clients", href: "/marketing/clients", icon: Users },
     { name: "Courses", href: "/marketing/courses", icon: BookOpen },
   ];
@@ -15,7 +15,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
       role="marketing"
       navItems={navItems}
       mobileMainTabs={[
-        { name: "Calendar", href: "/marketing", icon: Calendar },
+        { name: "Dashboard", href: "/marketing", icon: Calendar },
         { name: "Clients", href: "/marketing/clients", icon: Users },
         { name: "Courses", href: "/marketing/courses", icon: BookOpen },
       ]}

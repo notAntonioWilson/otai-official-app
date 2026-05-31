@@ -5,6 +5,7 @@ import {
   Megaphone, ChevronLeft, ChevronRight, ChevronDown, Plus, X,
   Trash2, Loader2, Check, AlertCircle, Users,
 } from "lucide-react";
+import MarketingTaskList from "@/components/marketing/MarketingTaskList";
 
 interface CalendarPost {
   id: string;
@@ -263,6 +264,8 @@ export default function OwnerMarketingOversight() {
           );
         })}
       </div>
+
+      <MarketingTaskList />
 
       {/* Modal */}
       {showModal && (
