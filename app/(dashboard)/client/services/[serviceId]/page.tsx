@@ -553,7 +553,7 @@ export default function ServiceDetailPage() {
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-xl bg-otai-green/15 flex items-center justify-center shrink-0"><UserPlus size={22} className="text-otai-green" /></div>
               <div>
-                <p className="text-xs text-otai-green/70 uppercase tracking-wide">Leads Generated via Social</p>
+                <p className="text-xs text-otai-green/70 uppercase tracking-wide">{overview.leads_label || "Leads Generated via Social"}</p>
                 <p className="text-3xl font-bold text-otai-green leading-none mt-0.5">{(() => {
                   const raw = overview.leads;
                   const n = typeof raw === "number" ? raw : Number(String(raw).replace(/[^0-9.]/g, ""));
