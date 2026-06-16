@@ -296,7 +296,18 @@ export default function ServiceDetailPage() {
 
     return (
       <div>
-        <h1 className="text-2xl font-bold text-white mb-6">{title}</h1>
+        <div className="flex items-center gap-3 mb-6 flex-wrap">
+          <h1 className="text-2xl font-bold text-white">{title}</h1>
+          {gsc.status === "final_snapshot" && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-otai-text-muted/15 border border-otai-border text-otai-text-secondary text-xs font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-otai-text-muted" />
+              Final Snapshot
+            </span>
+          )}
+        </div>
+        {gsc.status === "final_snapshot" && (
+          <p className="text-otai-text-muted text-xs -mt-3 mb-6">These figures reflect the most recent data. This service is no longer actively managed.</p>
+        )}
 
         {/* Google Search Console Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
