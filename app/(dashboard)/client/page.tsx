@@ -159,40 +159,64 @@ export default function ClientDashboard() {
       ) : (
         <>
           {/* ===== IMPACT HIGHLIGHT ===== */}
-          {impact && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            {impact.revenue && (
-            <div className="bg-gradient-to-br from-otai-green/10 to-otai-green/5 border border-otai-green/20 rounded-xl p-5">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-xl bg-otai-green/15 flex items-center justify-center"><DollarSign size={20} className="text-otai-green" /></div>
-                <div>
-                  <p className="text-xs text-otai-green/70 uppercase tracking-wide">Potential Revenue Generated</p>
-                  <p className="text-3xl font-bold text-otai-green">{impact.revenue}</p>
-                </div>
+          {(() => {
+            const hasRevenue = impact && impact.revenue;
+            const hasHire = impact && impact.hire_requests;
+            const leadsVal = leadsOverview && leadsOverview.leads !== undefined && leadsOverview.leads !== null ? leadsOverview.leads : null;
+            // Right slot: hire_requests if present, otherwise leads (gold). Leads only promoted into the impact row when there's revenue and no hire_requests.
+            const leadsInImpact = hasRevenue && !hasHire && leadsVal !== null;
+            const fmtLeads = (raw: string | number) => {
+              const n = typeof raw === "number" ? raw : Number(String(raw).replace(/[^0-9.]/g, ""));
+              return Number.isFinite(n) && String(raw).match(/^[0-9,]+$/) ? n.toLocaleString() : String(raw);
+            };
+            if (!hasRevenue && !hasHire && !leadsInImpact) return null;
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                {hasRevenue && (
+                  <div className="bg-gradient-to-br from-otai-green/10 to-otai-green/5 border border-otai-green/20 rounded-xl p-5">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-xl bg-otai-green/15 flex items-center justify-center"><DollarSign size={20} className="text-otai-green" /></div>
+                      <div>
+                        <p className="text-xs text-otai-green/70 uppercase tracking-wide">Potential Revenue Generated</p>
+                        <p className="text-3xl font-bold text-otai-green">{impact.revenue}</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-otai-text-muted">{impact.revenue_note || "Direct revenue from leads captured through your website and campaigns"}</p>
+                  </div>
+                )}
+                {hasHire && (
+                  <div className="bg-gradient-to-br from-otai-purple/10 to-otai-purple/5 border border-otai-purple/20 rounded-xl p-5">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-xl bg-otai-purple/15 flex items-center justify-center"><Briefcase size={20} className="text-otai-purple" /></div>
+                      <div>
+                        <p className="text-xs text-otai-purple/70 uppercase tracking-wide">Hire Requests</p>
+                        <p className="text-3xl font-bold text-otai-purple">{impact.hire_requests}</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-otai-text-muted">{impact.hire_note || "Requests to hire via website and social media channels"}</p>
+                  </div>
+                )}
+                {leadsInImpact && (
+                  <div className="bg-gradient-to-br from-amber-400/10 to-amber-400/5 border border-amber-400/25 rounded-xl p-5">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-xl bg-amber-400/15 flex items-center justify-center"><UserPlus size={20} className="text-amber-400" /></div>
+                      <div>
+                        <p className="text-xs text-amber-400/70 uppercase tracking-wide">{leadsOverview.leads_label || "Leads Generated via Social"}</p>
+                        <p className="text-3xl font-bold text-amber-400">{fmtLeads(leadsVal)}</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-otai-text-muted">{leadsOverview.leads_note || "Potential clients who reached out through your social media channels."}</p>
+                  </div>
+                )}
               </div>
-              <p className="text-xs text-otai-text-muted">{impact.revenue_note || "Direct revenue from leads captured through your website and campaigns"}</p>
-            </div>
-            )}
-            {impact.hire_requests && (
-            <div className="bg-gradient-to-br from-otai-purple/10 to-otai-purple/5 border border-otai-purple/20 rounded-xl p-5">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-xl bg-otai-purple/15 flex items-center justify-center"><Briefcase size={20} className="text-otai-purple" /></div>
-                <div>
-                  <p className="text-xs text-otai-purple/70 uppercase tracking-wide">Hire Requests</p>
-                  <p className="text-3xl font-bold text-otai-purple">{impact.hire_requests}</p>
-                </div>
-              </div>
-              <p className="text-xs text-otai-text-muted">{impact.hire_note || "Requests to hire via website and social media channels"}</p>
-            </div>
-            )}
-          </div>
-          )}
+            );
+          })()}
 
           {/* ===== SERVICE OVERVIEW CARDS ===== */}
           <div className="space-y-4">
 
-            {/* Leads (social or website) — shown above service cards */}
-            {leadsOverview && leadsHref && leadsOverview.leads !== undefined && leadsOverview.leads !== null && (
+            {/* Leads card (green) — only when NOT already promoted into the impact row above */}
+            {leadsOverview && leadsHref && leadsOverview.leads !== undefined && leadsOverview.leads !== null && !(impact && impact.revenue && !impact.hire_requests) && (
               <a href={`/client/services/${leadsHref}`} className="block bg-gradient-to-br from-otai-green/10 to-otai-green/[0.03] border border-otai-green/20 rounded-xl p-5 hover:border-otai-green/40 transition-colors group">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-otai-green/15 flex items-center justify-center shrink-0"><UserPlus size={20} className="text-otai-green" /></div>
