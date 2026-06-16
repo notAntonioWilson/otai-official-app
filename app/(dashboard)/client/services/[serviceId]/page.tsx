@@ -7,7 +7,7 @@ import type { ClientService, ServiceDataBlock, Automation } from "@/types";
 import {
   ExternalLink, ChevronLeft, ChevronRight, Calendar, Info,
   Globe, Smartphone, Monitor, TrendingUp, Users, MessageSquare,
-  ThumbsUp, Share2, Eye, UserPlus, BarChart3, Youtube, Clock,
+  ThumbsUp, Share2, Eye, UserPlus, BarChart3, Youtube, Clock, ShoppingBag,
 } from "lucide-react";
 
 const SERVICE_NAMES: Record<string, string> = {
@@ -573,6 +573,23 @@ export default function ServiceDetailPage() {
               </div>
             </div>
             <p className="text-xs text-otai-text-muted mt-3">{overview.leads_note || "Potential clients who reached out through your social media channels."}</p>
+          </div>
+        )}
+
+        {overview.affiliate_sales !== undefined && overview.affiliate_sales !== null && (
+          <div className="bg-gradient-to-br from-amber-500/10 to-amber-500/[0.03] border border-amber-500/20 rounded-xl p-5 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0"><ShoppingBag size={22} className="text-amber-400" /></div>
+              <div>
+                <p className="text-xs text-amber-400/70 uppercase tracking-wide">{overview.affiliate_sales_label || "Affiliate Sales Generated"}</p>
+                <p className="text-3xl font-bold text-amber-400 leading-none mt-0.5">{(() => {
+                  const raw = overview.affiliate_sales;
+                  const n = typeof raw === "number" ? raw : Number(String(raw).replace(/[^0-9.]/g, ""));
+                  return Number.isFinite(n) && String(raw).match(/^[0-9,]+$/) ? n.toLocaleString() : String(raw);
+                })()}</p>
+              </div>
+            </div>
+            <p className="text-xs text-otai-text-muted mt-3">{overview.affiliate_sales_note || "Sales generated through your affiliate and social media channels."}</p>
           </div>
         )}
 

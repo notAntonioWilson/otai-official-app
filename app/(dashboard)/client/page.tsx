@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import {
   Globe, MessageSquare, Share2, Eye, TrendingUp,
   Users, BarChart3, Monitor, Smartphone, DollarSign,
-  Briefcase, ChevronRight, UserPlus,
+  Briefcase, ChevronRight, UserPlus, ShoppingBag,
 } from "lucide-react";
 
 interface ServiceWithBlocks {
@@ -334,6 +334,23 @@ export default function ClientDashboard() {
                     })()}</p>
                   </div>
                   <ChevronRight size={16} className="text-otai-text-muted group-hover:text-otai-green transition-colors" />
+                </div>
+              </a>
+            )}
+
+            {overview && social && overview.affiliate_sales !== undefined && overview.affiliate_sales !== null && (
+              <a href={`/client/services/${social.id}`} className="block bg-gradient-to-br from-amber-500/10 to-amber-500/[0.03] border border-amber-500/20 rounded-xl p-5 hover:border-amber-500/40 transition-colors group">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0"><ShoppingBag size={20} className="text-amber-400" /></div>
+                  <div className="flex-1">
+                    <p className="text-xs text-amber-400/70 uppercase tracking-wide">{overview.affiliate_sales_label || "Affiliate Sales Generated"}</p>
+                    <p className="text-2xl font-bold text-amber-400 leading-none mt-0.5">{(() => {
+                      const raw = overview.affiliate_sales;
+                      const n = typeof raw === "number" ? raw : Number(String(raw).replace(/[^0-9.]/g, ""));
+                      return Number.isFinite(n) && String(raw).match(/^[0-9,]+$/) ? n.toLocaleString() : String(raw);
+                    })()}</p>
+                  </div>
+                  <ChevronRight size={16} className="text-otai-text-muted group-hover:text-amber-400 transition-colors" />
                 </div>
               </a>
             )}
