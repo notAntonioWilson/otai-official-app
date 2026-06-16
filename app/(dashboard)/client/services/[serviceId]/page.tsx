@@ -293,6 +293,7 @@ export default function ServiceDetailPage() {
     const gbp = getJson("google_business") || {};
     const locations = getJson("top_locations") || [];
     const trendData = gsc.trend || [];
+    const seoOverview = getJson("social_overview") || {};
 
     return (
       <div>
@@ -307,6 +308,23 @@ export default function ServiceDetailPage() {
         </div>
         {gsc.status === "final_snapshot" && (
           <p className="text-otai-text-muted text-xs -mt-3 mb-6">These figures reflect the most recent data. This service is no longer actively managed.</p>
+        )}
+
+        {seoOverview.leads !== undefined && seoOverview.leads !== null && (
+          <div className="bg-gradient-to-br from-otai-green/10 to-otai-green/[0.03] border border-otai-green/20 rounded-xl p-5 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-otai-green/15 flex items-center justify-center shrink-0"><UserPlus size={22} className="text-otai-green" /></div>
+              <div>
+                <p className="text-xs text-otai-green/70 uppercase tracking-wide">{seoOverview.leads_label || "Website Leads Generated"}</p>
+                <p className="text-3xl font-bold text-otai-green leading-none mt-0.5">{(() => {
+                  const raw = seoOverview.leads;
+                  const n = typeof raw === "number" ? raw : Number(String(raw).replace(/[^0-9.]/g, ""));
+                  return Number.isFinite(n) && String(raw).match(/^[0-9,]+$/) ? n.toLocaleString() : String(raw);
+                })()}</p>
+              </div>
+            </div>
+            <p className="text-xs text-otai-text-muted mt-3">{seoOverview.leads_note || "Potential clients who reached out through your website."}</p>
+          </div>
         )}
 
         {/* Google Search Console Stats */}

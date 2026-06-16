@@ -125,6 +125,10 @@ export default function ClientDashboard() {
   const pagespeed = seo ? getJson(seo.blocks, "pagespeed") : null;
   const gbp = seo ? getJson(seo.blocks, "google_business") : null;
   const overview = social ? getJson(social.blocks, "social_overview") : null;
+  // Website/SEO-only clients store leads in a social_overview block inside the website_seo service.
+  const seoOverview = seo ? getJson(seo.blocks, "social_overview") : null;
+  const leadsOverview = overview || seoOverview;
+  const leadsHref = social ? social.id : (seo ? seo.id : null);
   const fb = social ? getJson(social.blocks, "facebook_data") : null;
   const ig = social ? getJson(social.blocks, "instagram_data") : null;
   const li = social ? getJson(social.blocks, "linkedin_data") : null;
@@ -320,15 +324,15 @@ export default function ClientDashboard() {
               </a>
             )}
 
-            {/* Social Leads (below everything) */}
-            {overview && social && overview.leads !== undefined && overview.leads !== null && (
-              <a href={`/client/services/${social.id}`} className="block bg-gradient-to-br from-otai-green/10 to-otai-green/[0.03] border border-otai-green/20 rounded-xl p-5 hover:border-otai-green/40 transition-colors group">
+            {/* Leads (social or website) */}
+            {leadsOverview && leadsHref && leadsOverview.leads !== undefined && leadsOverview.leads !== null && (
+              <a href={`/client/services/${leadsHref}`} className="block bg-gradient-to-br from-otai-green/10 to-otai-green/[0.03] border border-otai-green/20 rounded-xl p-5 hover:border-otai-green/40 transition-colors group">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-otai-green/15 flex items-center justify-center shrink-0"><UserPlus size={20} className="text-otai-green" /></div>
                   <div className="flex-1">
-                    <p className="text-xs text-otai-green/70 uppercase tracking-wide">{overview.leads_label || "Leads Generated via Social"}</p>
+                    <p className="text-xs text-otai-green/70 uppercase tracking-wide">{leadsOverview.leads_label || "Leads Generated via Social"}</p>
                     <p className="text-2xl font-bold text-otai-green leading-none mt-0.5">{(() => {
-                      const raw = overview.leads;
+                      const raw = leadsOverview.leads;
                       const n = typeof raw === "number" ? raw : Number(String(raw).replace(/[^0-9.]/g, ""));
                       return Number.isFinite(n) && String(raw).match(/^[0-9,]+$/) ? n.toLocaleString() : String(raw);
                     })()}</p>
