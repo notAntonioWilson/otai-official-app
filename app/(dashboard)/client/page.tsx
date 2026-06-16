@@ -191,6 +191,24 @@ export default function ClientDashboard() {
           {/* ===== SERVICE OVERVIEW CARDS ===== */}
           <div className="space-y-4">
 
+            {/* Leads (social or website) — shown above service cards */}
+            {leadsOverview && leadsHref && leadsOverview.leads !== undefined && leadsOverview.leads !== null && (
+              <a href={`/client/services/${leadsHref}`} className="block bg-gradient-to-br from-otai-green/10 to-otai-green/[0.03] border border-otai-green/20 rounded-xl p-5 hover:border-otai-green/40 transition-colors group">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-otai-green/15 flex items-center justify-center shrink-0"><UserPlus size={20} className="text-otai-green" /></div>
+                  <div className="flex-1">
+                    <p className="text-xs text-otai-green/70 uppercase tracking-wide">{leadsOverview.leads_label || "Leads Generated via Social"}</p>
+                    <p className="text-2xl font-bold text-otai-green leading-none mt-0.5">{(() => {
+                      const raw = leadsOverview.leads;
+                      const n = typeof raw === "number" ? raw : Number(String(raw).replace(/[^0-9.]/g, ""));
+                      return Number.isFinite(n) && String(raw).match(/^[0-9,]+$/) ? n.toLocaleString() : String(raw);
+                    })()}</p>
+                  </div>
+                  <ChevronRight size={16} className="text-otai-text-muted group-hover:text-otai-green transition-colors" />
+                </div>
+              </a>
+            )}
+
             {/* Website & SEO */}
             {gsc && seo && (
               <a href={`/client/services/${seo.id}`} className="block bg-otai-dark border border-otai-border rounded-xl p-5 hover:border-otai-purple/30 transition-colors group">
@@ -320,24 +338,6 @@ export default function ClientDashboard() {
                 </div>
                 <div className="mt-3 pt-3 border-t border-otai-border/30">
                   <p className="text-xs text-otai-green">{chatbotData.status_text}</p>
-                </div>
-              </a>
-            )}
-
-            {/* Leads (social or website) */}
-            {leadsOverview && leadsHref && leadsOverview.leads !== undefined && leadsOverview.leads !== null && (
-              <a href={`/client/services/${leadsHref}`} className="block bg-gradient-to-br from-otai-green/10 to-otai-green/[0.03] border border-otai-green/20 rounded-xl p-5 hover:border-otai-green/40 transition-colors group">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-otai-green/15 flex items-center justify-center shrink-0"><UserPlus size={20} className="text-otai-green" /></div>
-                  <div className="flex-1">
-                    <p className="text-xs text-otai-green/70 uppercase tracking-wide">{leadsOverview.leads_label || "Leads Generated via Social"}</p>
-                    <p className="text-2xl font-bold text-otai-green leading-none mt-0.5">{(() => {
-                      const raw = leadsOverview.leads;
-                      const n = typeof raw === "number" ? raw : Number(String(raw).replace(/[^0-9.]/g, ""));
-                      return Number.isFinite(n) && String(raw).match(/^[0-9,]+$/) ? n.toLocaleString() : String(raw);
-                    })()}</p>
-                  </div>
-                  <ChevronRight size={16} className="text-otai-text-muted group-hover:text-otai-green transition-colors" />
                 </div>
               </a>
             )}
