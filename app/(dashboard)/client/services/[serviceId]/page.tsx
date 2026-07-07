@@ -638,7 +638,7 @@ export default function ServiceDetailPage() {
               <StatCard label="Total Views" value={fb.views?.toLocaleString() || "0"} color="text-blue-400" tip="Total video and reel views on Facebook." />
               {fb.three_sec_views > 0 && <StatCard label="3-Second Views" value={fb.three_sec_views?.toLocaleString() || "0"} sub={fb.three_sec_change || ""} color="text-blue-400" tip="Views where someone watched at least 3 seconds." />}
               {fb.engagement > 0 && <StatCard label="Engagement" value={fb.engagement?.toLocaleString() || "0"} sub={fb.engagement_change || ""} color="text-blue-400" tip="Total reactions, comments, and shares." />}
-              {fb.shares > 0 && <StatCard label="Shares" value={fb.shares?.toLocaleString() || "0"} color="text-blue-400" />}
+              {fb.followers > 0 && <StatCard label="Followers" value={fb.followers?.toLocaleString() || "0"} sub={fb.followers_change || ""} color="text-blue-400" tip="Total Facebook page followers." />}
             </div>
             {((fb.content_types || []).length > 0 || fb.reactions > 0) && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
