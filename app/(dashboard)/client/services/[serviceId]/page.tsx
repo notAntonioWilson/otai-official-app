@@ -796,12 +796,12 @@ export default function ServiceDetailPage() {
         {/* ---- INSTAGRAM ---- */}
         {ig.followers !== undefined && (
           <>
-            <SectionTitle icon={Eye} title={`Instagram — ${ig.window_label || "Last 90 Days"}`} color="text-pink-400" />
+            <SectionTitle icon={Eye} title={`Instagram — ${ig.window_label || "This Year"}`} color="text-pink-400" />
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               <StatCard label="Followers" value={ig.followers?.toLocaleString()} sub={ig.followers_change || ""} color="text-pink-400" tip="Current Instagram follower count." />
-              <StatCard label="Views" value={ig.views_90d?.toLocaleString() || "0"} color="text-pink-400" tip={`Total views in the ${(ig.window_label || "last 90 days").toLowerCase()}.`} />
-              <StatCard label="Interactions" value={ig.interactions_90d?.toLocaleString() || "0"} color="text-pink-400" tip={`Total interactions in the ${(ig.window_label || "last 90 days").toLowerCase()}.`} />
-              <StatCard label="Accounts Reached" value={ig.accounts_reached?.toLocaleString() || "0"} sub={ig.accounts_reached_change || ""} color="text-pink-400" tip={`Unique accounts that saw this content in the ${(ig.window_label || "last 90 days").toLowerCase()}.`} />
+              <StatCard label="Views" value={ig.views_90d?.toLocaleString() || "0"} color="text-pink-400" tip={`Total views (${(ig.window_label || "this year").toLowerCase()}).`} />
+              <StatCard label="Interactions" value={ig.interactions_90d?.toLocaleString() || "0"} color="text-pink-400" tip={`Total interactions (${(ig.window_label || "this year").toLowerCase()}).`} />
+              <StatCard label="Accounts Reached" value={ig.accounts_reached?.toLocaleString() || "0"} sub={ig.accounts_reached_change || ""} color="text-pink-400" tip={`Unique accounts that saw this content (${(ig.window_label || "this year").toLowerCase()}).`} />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div className="bg-otai-dark border border-otai-border rounded-xl p-4">
