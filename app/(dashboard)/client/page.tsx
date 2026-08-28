@@ -177,7 +177,7 @@ export default function ClientDashboard() {
                     <div className="flex items-center gap-3 mb-3">
                       <div className="w-10 h-10 rounded-xl bg-otai-green/15 flex items-center justify-center"><DollarSign size={20} className="text-otai-green" /></div>
                       <div>
-                        <p className="text-xs text-otai-green/70 uppercase tracking-wide">Potential Revenue Generated</p>
+                        <p className="text-xs text-otai-green/70 uppercase tracking-wide">Revenue Generated</p>
                         <p className="text-3xl font-bold text-otai-green">{impact.revenue}</p>
                       </div>
                     </div>
