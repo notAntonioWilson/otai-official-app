@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import {
   Globe, MessageSquare, Share2, Eye, TrendingUp,
   Users, BarChart3, Monitor, Smartphone, DollarSign,
-  Briefcase, ChevronRight, UserPlus, ShoppingBag,
+  Briefcase, ChevronRight, UserPlus, ShoppingBag, FileText,
 } from "lucide-react";
 
 interface ServiceWithBlocks {
@@ -161,6 +161,8 @@ export default function ClientDashboard() {
           {/* ===== IMPACT HIGHLIGHT ===== */}
           {(() => {
             const hasRevenue = impact && impact.revenue;
+            const hasBlogs = impact && impact.blog_posts !== undefined && impact.blog_posts !== null;
+            const hasTraffic = impact && impact.traffic !== undefined && impact.traffic !== null;
             const hasHire = impact && impact.hire_requests;
             const leadsVal = leadsOverview && leadsOverview.leads !== undefined && leadsOverview.leads !== null ? leadsOverview.leads : null;
             // Right slot: hire_requests if present, otherwise leads (gold). Leads only promoted into the impact row when there's revenue and no hire_requests.
@@ -169,9 +171,33 @@ export default function ClientDashboard() {
               const n = typeof raw === "number" ? raw : Number(String(raw).replace(/[^0-9.]/g, ""));
               return Number.isFinite(n) && String(raw).match(/^[0-9,]+$/) ? n.toLocaleString() : String(raw);
             };
-            if (!hasRevenue && !hasHire && !leadsInImpact) return null;
+            if (!hasRevenue && !hasHire && !leadsInImpact && !hasBlogs && !hasTraffic) return null;
             return (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                {hasBlogs && (
+                  <div className="bg-gradient-to-br from-amber-400/10 to-amber-400/5 border border-amber-400/25 rounded-xl p-5">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-xl bg-amber-400/15 flex items-center justify-center"><FileText size={20} className="text-amber-400" /></div>
+                      <div>
+                        <p className="text-xs text-amber-400/70 uppercase tracking-wide">{impact.blog_label || "Blog Posts Published"}</p>
+                        <p className="text-3xl font-bold text-amber-400">{impact.blog_posts}</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-otai-text-muted">{impact.blog_note || "SEO blog content published to your site to grow search visibility."}</p>
+                  </div>
+                )}
+                {hasTraffic && (
+                  <div className="bg-gradient-to-br from-otai-green/10 to-otai-green/5 border border-otai-green/20 rounded-xl p-5">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-xl bg-otai-green/15 flex items-center justify-center"><TrendingUp size={20} className="text-otai-green" /></div>
+                      <div>
+                        <p className="text-xs text-otai-green/70 uppercase tracking-wide">{impact.traffic_label || "Total Impressions"}</p>
+                        <p className="text-3xl font-bold text-otai-green">{impact.traffic}</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-otai-text-muted">{impact.traffic_note || "Times your site appeared in Google search results."}</p>
+                  </div>
+                )}
                 {hasRevenue && (
                   <div className="bg-gradient-to-br from-otai-green/10 to-otai-green/5 border border-otai-green/20 rounded-xl p-5">
                     <div className="flex items-center gap-3 mb-3">

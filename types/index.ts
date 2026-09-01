@@ -42,6 +42,7 @@ export type ServiceType =
   | "social_media"
   | "email_outreach"
   | "app"
+  | "keywords"
   | "custom";
 
 export interface ClientService {
@@ -99,5 +100,6 @@ export const SERVICE_DISPLAY: Record<
   social_media: { name: "Social Media", icon: "Share2" },
   email_outreach: { name: "Email Outreach", icon: "Mail" },
   app: { name: "App", icon: "Smartphone" },
+  keywords: { name: "Target Keywords", icon: "KeyRound" },
   custom: { name: "Custom", icon: "Puzzle" },
 };

@@ -7,13 +7,14 @@ import type { ClientService, ServiceDataBlock, Automation } from "@/types";
 import {
   ExternalLink, ChevronLeft, ChevronRight, Calendar, Info,
   Globe, Smartphone, Monitor, TrendingUp, Users, MessageSquare,
-  ThumbsUp, Share2, Eye, UserPlus, BarChart3, Youtube, Clock, ShoppingBag,
+  ThumbsUp, Share2, Eye, UserPlus, BarChart3, Youtube, Clock, ShoppingBag, KeyRound, Search,
 } from "lucide-react";
 
 const SERVICE_NAMES: Record<string, string> = {
   website_seo: "Website & SEO", chatbot: "Chatbot", phone_agent: "Phone Agent",
   automations: "Automations", social_media: "Social Media",
   email_outreach: "Email Outreach", app: "App", custom: "Custom",
+  keywords: "Target Keywords",
 };
 
 // ===================== TOOLTIP =====================
@@ -972,6 +973,58 @@ export default function ServiceDetailPage() {
           <div className="bg-otai-dark border border-otai-border rounded-xl p-5 mb-6">
             <h3 className="text-white font-semibold mb-2">Focus & Objectives</h3>
             <p className="text-otai-text-secondary text-sm">{service.objective_text}</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ==================== TARGET KEYWORDS ====================
+  if (service.service_type === "keywords") {
+    const kw = getJson("target_keywords");
+    const groups: { name: string; keywords: string[] }[] = kw?.groups || [];
+    const total = kw?.total ?? groups.reduce((a, g) => a + (g.keywords?.length || 0), 0);
+
+    return (
+      <div>
+        <h1 className="text-2xl font-bold text-white mb-2">{title}</h1>
+        {kw?.note && <p className="text-sm text-otai-text-secondary mb-6">{kw.note}</p>}
+
+        <div className="bg-gradient-to-br from-otai-purple/10 to-otai-purple/5 border border-otai-purple/20 rounded-xl p-5 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-otai-purple/15 flex items-center justify-center shrink-0">
+              <KeyRound size={20} className="text-otai-purple" />
+            </div>
+            <div>
+              <p className="text-xs text-otai-purple/70 uppercase tracking-wide">Keywords Targeted</p>
+              <p className="text-3xl font-bold text-otai-purple leading-none mt-0.5">{total}</p>
+            </div>
+          </div>
+        </div>
+
+        {groups.length === 0 ? (
+          <div className="bg-otai-dark border border-otai-border rounded-xl p-8 text-center">
+            <p className="text-otai-text-secondary">Keyword list will appear here once configured.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {groups.map((g, gi) => (
+              <div key={gi} className="bg-otai-dark border border-otai-border rounded-xl p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-white font-semibold flex items-center gap-2">
+                    <Search size={15} className="text-otai-purple" /> {g.name}
+                  </h3>
+                  <span className="text-xs text-otai-text-muted">{g.keywords?.length || 0}</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(g.keywords || []).map((k, ki) => (
+                    <span key={ki} className="text-xs text-otai-text-secondary bg-otai-purple/[0.07] border border-otai-purple/15 rounded-lg px-2.5 py-1.5">
+                      {k}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
