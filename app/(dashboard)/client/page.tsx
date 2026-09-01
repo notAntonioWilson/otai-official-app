@@ -165,6 +165,7 @@ export default function ClientDashboard() {
             const hasTraffic = impact && impact.traffic !== undefined && impact.traffic !== null;
             const hasHire = impact && impact.hire_requests;
             const hasImpactLeads = impact && impact.leads !== undefined && impact.leads !== null;
+            const hasEarnings = impact && impact.earnings !== undefined && impact.earnings !== null;
             const tone = (c?: string) => (c === "gold" || c === "amber")
               ? { wrap: "from-amber-400/10 to-amber-400/5 border-amber-400/25", ic: "bg-amber-400/15", tx: "text-amber-400", lb: "text-amber-400/70" }
               : { wrap: "from-otai-green/10 to-otai-green/5 border-otai-green/20", ic: "bg-otai-green/15", tx: "text-otai-green", lb: "text-otai-green/70" };
@@ -175,9 +176,10 @@ export default function ClientDashboard() {
               const n = typeof raw === "number" ? raw : Number(String(raw).replace(/[^0-9.]/g, ""));
               return Number.isFinite(n) && String(raw).match(/^[0-9,]+$/) ? n.toLocaleString() : String(raw);
             };
-            if (!hasRevenue && !hasHire && !leadsInImpact && !hasBlogs && !hasTraffic && !hasImpactLeads) return null;
+            if (!hasRevenue && !hasHire && !leadsInImpact && !hasBlogs && !hasTraffic && !hasImpactLeads && !hasEarnings) return null;
             return (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+              <>
+              <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${hasEarnings ? "mb-4" : "mb-8"}`}>
                 {hasBlogs && (
                   <div className="bg-gradient-to-br from-amber-400/10 to-amber-400/5 border border-amber-400/25 rounded-xl p-5">
                     <div className="flex items-center gap-3 mb-3">
@@ -251,6 +253,19 @@ export default function ClientDashboard() {
                   </div>
                 )}
               </div>
+              {hasEarnings && (
+                <div className="bg-gradient-to-r from-blue-500/10 to-blue-500/5 border border-blue-500/25 rounded-xl p-5 mb-8">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center shrink-0"><DollarSign size={20} className="text-blue-400" /></div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-blue-400/70 uppercase tracking-wide">{impact.earnings_label || "Earnings from Organic Facebook"}</p>
+                      <p className="text-2xl font-bold text-blue-400 leading-none mt-0.5">{impact.earnings}</p>
+                    </div>
+                  </div>
+                  {impact.earnings_note && <p className="text-xs text-otai-text-muted mt-3">{impact.earnings_note}</p>}
+                </div>
+              )}
+              </>
             );
           })()}
 
