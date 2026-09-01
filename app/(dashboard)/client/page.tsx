@@ -164,6 +164,10 @@ export default function ClientDashboard() {
             const hasBlogs = impact && impact.blog_posts !== undefined && impact.blog_posts !== null;
             const hasTraffic = impact && impact.traffic !== undefined && impact.traffic !== null;
             const hasHire = impact && impact.hire_requests;
+            const hasImpactLeads = impact && impact.leads !== undefined && impact.leads !== null;
+            const tone = (c?: string) => (c === "gold" || c === "amber")
+              ? { wrap: "from-amber-400/10 to-amber-400/5 border-amber-400/25", ic: "bg-amber-400/15", tx: "text-amber-400", lb: "text-amber-400/70" }
+              : { wrap: "from-otai-green/10 to-otai-green/5 border-otai-green/20", ic: "bg-otai-green/15", tx: "text-otai-green", lb: "text-otai-green/70" };
             const leadsVal = leadsOverview && leadsOverview.leads !== undefined && leadsOverview.leads !== null ? leadsOverview.leads : null;
             // Right slot: hire_requests if present, otherwise leads (gold). Leads only promoted into the impact row when there's revenue and no hire_requests.
             const leadsInImpact = hasRevenue && !hasHire && leadsVal !== null;
@@ -171,7 +175,7 @@ export default function ClientDashboard() {
               const n = typeof raw === "number" ? raw : Number(String(raw).replace(/[^0-9.]/g, ""));
               return Number.isFinite(n) && String(raw).match(/^[0-9,]+$/) ? n.toLocaleString() : String(raw);
             };
-            if (!hasRevenue && !hasHire && !leadsInImpact && !hasBlogs && !hasTraffic) return null;
+            if (!hasRevenue && !hasHire && !leadsInImpact && !hasBlogs && !hasTraffic && !hasImpactLeads) return null;
             return (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                 {hasBlogs && (
@@ -186,18 +190,30 @@ export default function ClientDashboard() {
                     <p className="text-xs text-otai-text-muted">{impact.blog_note || "SEO blog content published to your site to grow search visibility."}</p>
                   </div>
                 )}
-                {hasTraffic && (
-                  <div className="bg-gradient-to-br from-otai-green/10 to-otai-green/5 border border-otai-green/20 rounded-xl p-5">
+                {hasImpactLeads && (() => { const t = tone(impact.leads_color || "green"); return (
+                  <div className={`bg-gradient-to-br ${t.wrap} border rounded-xl p-5`}>
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-xl bg-otai-green/15 flex items-center justify-center"><TrendingUp size={20} className="text-otai-green" /></div>
+                      <div className={`w-10 h-10 rounded-xl ${t.ic} flex items-center justify-center`}><UserPlus size={20} className={t.tx} /></div>
                       <div>
-                        <p className="text-xs text-otai-green/70 uppercase tracking-wide">{impact.traffic_label || "Total Impressions"}</p>
-                        <p className="text-3xl font-bold text-otai-green">{impact.traffic}</p>
+                        <p className={`text-xs ${t.lb} uppercase tracking-wide`}>{impact.leads_label || "Leads Generated"}</p>
+                        <p className={`text-3xl font-bold ${t.tx}`}>{fmtLeads(impact.leads)}</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-otai-text-muted">{impact.leads_note || "Potential clients who reached out through your website."}</p>
+                  </div>
+                ); })()}
+                {hasTraffic && (() => { const t = tone(impact.traffic_color || "green"); return (
+                  <div className={`bg-gradient-to-br ${t.wrap} border rounded-xl p-5`}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className={`w-10 h-10 rounded-xl ${t.ic} flex items-center justify-center`}><TrendingUp size={20} className={t.tx} /></div>
+                      <div>
+                        <p className={`text-xs ${t.lb} uppercase tracking-wide`}>{impact.traffic_label || "Total Impressions"}</p>
+                        <p className={`text-3xl font-bold ${t.tx}`}>{impact.traffic}</p>
                       </div>
                     </div>
                     <p className="text-xs text-otai-text-muted">{impact.traffic_note || "Times your site appeared in Google search results."}</p>
                   </div>
-                )}
+                ); })()}
                 {hasRevenue && (
                   <div className="bg-gradient-to-br from-otai-green/10 to-otai-green/5 border border-otai-green/20 rounded-xl p-5">
                     <div className="flex items-center gap-3 mb-3">
@@ -242,7 +258,7 @@ export default function ClientDashboard() {
           <div className="space-y-4">
 
             {/* Leads card (green) — only when NOT already promoted into the impact row above */}
-            {leadsOverview && leadsHref && leadsOverview.leads !== undefined && leadsOverview.leads !== null && !(impact && impact.revenue && !impact.hire_requests) && (
+            {leadsOverview && leadsHref && leadsOverview.leads !== undefined && leadsOverview.leads !== null && !(impact && impact.leads !== undefined && impact.leads !== null) && !(impact && impact.revenue && !impact.hire_requests) && (
               <a href={`/client/services/${leadsHref}`} className="block bg-gradient-to-br from-otai-green/10 to-otai-green/[0.03] border border-otai-green/20 rounded-xl p-5 hover:border-otai-green/40 transition-colors group">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-otai-green/15 flex items-center justify-center shrink-0"><UserPlus size={20} className="text-otai-green" /></div>
