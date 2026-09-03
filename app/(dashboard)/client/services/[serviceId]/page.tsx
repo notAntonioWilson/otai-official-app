@@ -15,6 +15,7 @@ const SERVICE_NAMES: Record<string, string> = {
   automations: "Automations", social_media: "Social Media",
   email_outreach: "Email Outreach", app: "App", custom: "Custom",
   keywords: "Target Keywords",
+  content_strategy: "Content Strategy",
 };
 
 // ===================== TOOLTIP =====================
@@ -973,6 +974,182 @@ export default function ServiceDetailPage() {
           <div className="bg-otai-dark border border-otai-border rounded-xl p-5 mb-6">
             <h3 className="text-white font-semibold mb-2">Focus & Objectives</h3>
             <p className="text-otai-text-secondary text-sm">{service.objective_text}</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ==================== CONTENT STRATEGY ====================
+  if (service.service_type === "content_strategy") {
+    const cs = getJson("content_strategy");
+    const sections: any[] = cs?.sections || [];
+
+    const ACCENTS: Record<string, { text: string; bg: string; border: string; dot: string }> = {
+      purple: { text: "text-otai-purple", bg: "bg-otai-purple/10", border: "border-otai-purple/25", dot: "bg-otai-purple" },
+      gold:   { text: "text-otai-gold",   bg: "bg-otai-gold/10",   border: "border-otai-gold/25",   dot: "bg-otai-gold" },
+      green:  { text: "text-otai-green",  bg: "bg-otai-green/10",  border: "border-otai-green/25",  dot: "bg-otai-green" },
+      blue:   { text: "text-blue-400",    bg: "bg-blue-500/10",    border: "border-blue-500/25",    dot: "bg-blue-400" },
+      pink:   { text: "text-pink-400",    bg: "bg-pink-500/10",    border: "border-pink-500/25",    dot: "bg-pink-400" },
+      cyan:   { text: "text-cyan-400",    bg: "bg-cyan-500/10",    border: "border-cyan-500/25",    dot: "bg-cyan-400" },
+      red:    { text: "text-otai-red",    bg: "bg-otai-red/10",    border: "border-otai-red/25",    dot: "bg-otai-red" },
+    };
+    const A = (k?: string) => ACCENTS[k || "purple"] || ACCENTS.purple;
+
+    const renderBlock = (b: any, i: number, acc: any) => {
+      switch (b.type) {
+        case "paragraph":
+          return <p key={i} className="text-sm text-otai-text-secondary leading-relaxed mb-3">{b.text}</p>;
+
+        case "subhead":
+          return (
+            <div key={i} className="flex items-center gap-2 mt-6 mb-3">
+              <span className={`w-1.5 h-1.5 rounded-full ${acc.dot}`} />
+              <h3 className="text-white font-semibold text-[15px]">{b.text}</h3>
+            </div>
+          );
+
+        case "numbered":
+          return (
+            <ol key={i} className="space-y-2 mb-4">
+              {b.items.map((it: any, k: number) => (
+                <li key={k} className="flex gap-3 text-sm">
+                  <span className={`shrink-0 w-6 h-6 rounded-lg ${acc.bg} ${acc.text} text-xs font-bold flex items-center justify-center`}>{k + 1}</span>
+                  <span className="text-otai-text-secondary leading-relaxed pt-0.5">
+                    <span className="text-white font-medium">{it.label}</span> {it.text}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          );
+
+        case "list":
+          return (
+            <ul key={i} className="space-y-1.5 mb-4">
+              {b.items.map((it: string, k: number) => (
+                <li key={k} className="flex gap-2.5 text-sm text-otai-text-secondary leading-relaxed">
+                  <span className={`shrink-0 w-1 h-1 rounded-full ${acc.dot} mt-2`} />
+                  <span>{it}</span>
+                </li>
+              ))}
+            </ul>
+          );
+
+        case "callout": {
+          const c = A(b.tone);
+          return (
+            <div key={i} className={`${c.bg} border ${c.border} rounded-xl p-4 my-4`}>
+              {b.title && <p className={`text-[11px] font-bold uppercase tracking-wider ${c.text} mb-1.5`}>{b.title}</p>}
+              <p className="text-sm text-otai-text-secondary leading-relaxed">{b.text}</p>
+            </div>
+          );
+        }
+
+        case "table":
+          return (
+            <div key={i} className="overflow-x-auto my-4 rounded-xl border border-otai-border">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className={`${acc.bg}`}>
+                    {b.columns.map((c: string, k: number) => (
+                      <th key={k} className={`text-left px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider ${acc.text} whitespace-nowrap`}>{c}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {b.rows.map((r: string[], k: number) => (
+                    <tr key={k} className="border-t border-otai-border">
+                      {r.map((cell: string, j: number) => (
+                        <td key={j} className={`px-4 py-3 align-top ${j === 0 ? "text-white font-medium whitespace-nowrap" : "text-otai-text-secondary"} leading-relaxed`}>{cell}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+
+        case "card":
+          return (
+            <div key={i} className="bg-otai-dark border border-otai-border rounded-xl p-4 mb-3">
+              <div className="flex items-center gap-2 mb-2.5">
+                {b.rank && <span className={`shrink-0 w-6 h-6 rounded-lg ${acc.bg} ${acc.text} text-xs font-bold flex items-center justify-center`}>{b.rank}</span>}
+                <h4 className="text-white font-semibold text-[15px]">{b.title}</h4>
+              </div>
+              {b.fields.map((f: any, k: number) => (
+                <div key={k} className="mb-2 last:mb-0">
+                  {f.label
+                    ? <p className="text-sm text-otai-text-secondary leading-relaxed"><span className={`${acc.text} font-medium`}>{f.label}:</span> {f.text}</p>
+                    : <p className="text-sm text-otai-text-secondary leading-relaxed">{f.text}</p>}
+                </div>
+              ))}
+            </div>
+          );
+
+        case "hook":
+          return (
+            <div key={i} className="bg-otai-dark border border-otai-border rounded-xl p-4 mb-3">
+              <div className="flex items-center gap-2.5 mb-3">
+                <span className={`shrink-0 w-7 h-7 rounded-lg ${acc.bg} ${acc.text} text-xs font-bold flex items-center justify-center`}>{b.num}</span>
+                <h4 className="text-white font-semibold text-[15px]">{b.title}</h4>
+                {b.delivery && <span className={`ml-auto text-[10px] uppercase tracking-wider px-2 py-1 rounded-md ${acc.bg} ${acc.text} font-semibold`}>{b.delivery}</span>}
+              </div>
+              <p className="text-sm text-otai-text-secondary leading-relaxed mb-1.5"><span className={`${acc.text} font-medium`}>What it is:</span> {b.what}</p>
+              <p className="text-sm text-otai-text-secondary leading-relaxed mb-1.5"><span className={`${acc.text} font-medium`}>Why it works:</span> {b.why}</p>
+              {b.delivery_note && <p className="text-sm text-otai-text-secondary leading-relaxed mb-3"><span className={`${acc.text} font-medium`}>Delivery:</span> {b.delivery_note}</p>}
+              <div className="space-y-1.5 mt-3 pt-3 border-t border-otai-border">
+                {b.examples.map((e: string, k: number) => (
+                  <p key={k} className="text-sm text-otai-text-secondary leading-relaxed pl-3 border-l-2 border-otai-border italic">{e}</p>
+                ))}
+              </div>
+            </div>
+          );
+
+        case "topicgroup":
+          return (
+            <div key={i} className="bg-otai-dark border border-otai-border rounded-xl p-4 mb-3">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className={`font-bold text-[13px] uppercase tracking-wider ${acc.text}`}>{b.name}</h4>
+                <span className="text-xs text-otai-text-muted">{b.items.length}</span>
+              </div>
+              <ul className="space-y-1.5">
+                {b.items.map((it: string, k: number) => (
+                  <li key={k} className="flex gap-2.5 text-sm text-otai-text-secondary leading-relaxed">
+                    <span className={`shrink-0 w-1 h-1 rounded-full ${acc.dot} mt-2`} />
+                    <span>{it}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+
+        default:
+          return null;
+      }
+    };
+
+    return (
+      <div className="max-w-4xl">
+        <h1 className="text-3xl font-bold text-otai-purple mb-8 tracking-tight">CONTENT STRATEGY</h1>
+
+        {sections.length === 0 ? (
+          <div className="bg-otai-dark border border-otai-border rounded-xl p-8 text-center">
+            <p className="text-otai-text-secondary">Your content strategy will appear here once configured.</p>
+          </div>
+        ) : (
+          <div className="space-y-10">
+            {sections.map((sec: any, si: number) => {
+              const acc = A(sec.accent);
+              return (
+                <section key={si}>
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className={`w-1 h-6 rounded-full ${acc.dot}`} />
+                    <h2 className={`text-lg font-bold tracking-wide ${acc.text}`}>{sec.title}</h2>
+                  </div>
+                  {(sec.blocks || []).map((b: any, bi: number) => renderBlock(b, bi, acc))}
+                </section>
+              );
+            })}
           </div>
         )}
       </div>

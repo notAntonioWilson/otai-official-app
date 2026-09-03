@@ -7,14 +7,14 @@ import type { Profile, Client, ClientService } from "@/types";
 import {
   LayoutDashboard, Bell, Settings, Home, MoreHorizontal, X,
   Globe, MessageSquare, Phone, Zap, Share2, Mail, Smartphone, Puzzle,
-  LogOut, Lock, ChevronRight, KeyRound,
+  LogOut, Lock, ChevronRight, KeyRound, FileText,
 } from "lucide-react";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const SERVICE_ICONS: Record<string, any> = {
   website_seo: Globe, chatbot: MessageSquare, phone_agent: Phone,
   automations: Zap, social_media: Share2, email_outreach: Mail,
-  app: Smartphone, custom: Puzzle, keywords: KeyRound,
+  app: Smartphone, custom: Puzzle, keywords: KeyRound, content_strategy: FileText,
 };
 
 const SERVICE_NAMES: Record<string, string> = {
@@ -22,6 +22,7 @@ const SERVICE_NAMES: Record<string, string> = {
   automations: "Automations", social_media: "Social Media",
   email_outreach: "Email Outreach", app: "App", custom: "Custom",
   keywords: "Target Keywords",
+  content_strategy: "Content Strategy",
 };
 
 interface NavItem {
